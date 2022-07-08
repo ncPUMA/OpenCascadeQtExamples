@@ -10,6 +10,21 @@ set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
+
+    ModelLoader/abstractmodelloader.h
+    ModelLoader/breploader.cpp
+    ModelLoader/breploader.h
+    ModelLoader/igesloader.cpp
+    ModelLoader/igesloader.h
+    ModelLoader/modelloaderfactorymethod.cpp
+    ModelLoader/modelloaderfactorymethod.h
+    ModelLoader/objloader.cpp
+    ModelLoader/objloader.h
+    ModelLoader/steploader.cpp
+    ModelLoader/steploader.h
+    ModelLoader/stlloader.cpp
+    ModelLoader/stlloader.h
+
     viewport.cpp
     viewport.h
 )
@@ -28,3 +43,8 @@ target_link_libraries(EdgeExplorer PRIVATE
     TKCDF TKBool TKBO TKFillet TKOffset TKLCAF TKCAF TKVCAF
     TKBin TKXml TKRWMesh
     )
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory
+                   ${CMAKE_SOURCE_DIR}/EdgeExplorer/Models $<TARGET_FILE_DIR:${PROJECT_NAME}>/Models
+                   )
