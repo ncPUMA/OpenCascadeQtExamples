@@ -3,6 +3,7 @@
 #include <QMouseEvent>
 
 #include <AIS_InteractiveContext.hxx>
+#include <AIS_Shape.hxx>
 #include <AIS_Trihedron.hxx>
 #include <AIS_ViewController.hxx>
 #include <AIS_ViewCube.hxx>
@@ -13,6 +14,7 @@
 #include <V3d_Viewer.hxx>
 
 #include "aspectwindow.h"
+#include "ModelLoader/steploader.h"
 
 class Aspect : public Aspect_Window
 {
@@ -49,6 +51,12 @@ class ViewPortPrivate : public AIS_ViewController
 
         //Context
         mContext = new AIS_InteractiveContext(mViewer);
+        Handle(Prs3d_Drawer) drawer = mContext->DefaultDrawer();
+        Handle(Prs3d_LineAspect) lAspect = drawer->FaceBoundaryAspect();
+        lAspect->SetColor(Quantity_NOC_DARKSLATEGRAY);
+        drawer->SetFaceBoundaryAspect(lAspect);
+        drawer->SetFaceBoundaryDraw(Standard_True);
+
         //Add AIS_ViewCube
         auto ais_axis_cube = new AIS_ViewCube();
         mContext->Display(ais_axis_cube, Standard_False);
@@ -57,7 +65,6 @@ class ViewPortPrivate : public AIS_ViewController
         Geom_Axis2Placement coords(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.), gp_Dir(1., 0., 0.));
         Handle(AIS_Trihedron) trihedron = new AIS_Trihedron(new Geom_Axis2Placement(coords));
         mContext->Display(trihedron, Standard_False);
-        mContext->SetZLayer(trihedron, mDeptOffLayer);
         mContext->Deactivate(trihedron);
         mView = mContext->CurrentViewer()->CreateView().get();
 
@@ -94,6 +101,23 @@ ViewPort::ViewPort(QWidget *parent)
     setFocusPolicy(Qt::StrongFocus);
 
     d_ptr->init(this);
+
+    const char *modelPath = "Models/45deg AdjMirr Adapter Left Rev1.STEP";
+    StepLoader loader;
+    const TopoDS_Shape shape = loader.load(modelPath);
+    Handle(AIS_Shape) obj = new AIS_Shape(shape);
+    d_ptr->mContext->Display(obj, Standard_False);
+    d_ptr->mContext->SetDisplayMode(obj, AIS_Shaded, Standard_True);
+
+    d_ptr->mContext->SetSelectionModeActive(obj,
+                                            AIS_Shape::SelectionMode(TopAbs_SHAPE),
+                                            Standard_False);
+    d_ptr->mContext->SetSelectionModeActive(obj,
+                                            AIS_Shape::SelectionMode(TopAbs_EDGE),
+                                            Standard_True);
+    d_ptr->mContext->SetSelectionSensitivity(obj,
+                                             AIS_Shape::SelectionMode(TopAbs_EDGE),
+                                             30);
 }
 
 ViewPort::~ViewPort()
