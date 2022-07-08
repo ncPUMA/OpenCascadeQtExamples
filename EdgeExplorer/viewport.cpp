@@ -1,15 +1,24 @@
 #include "viewport.h"
 
+#include <QDebug>
 #include <QMouseEvent>
 
 #include <AIS_InteractiveContext.hxx>
+#include <AIS_Point.hxx>
 #include <AIS_Shape.hxx>
 #include <AIS_Trihedron.hxx>
 #include <AIS_ViewController.hxx>
 #include <AIS_ViewCube.hxx>
+#include <BRep_Tool.hxx>
 #include <Geom_Axis2Placement.hxx>
+#include <Geom_CartesianPoint.hxx>
+#include <Geom_Curve.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <OSD_Environment.hxx>
+#include <StdSelect_BRepOwner.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <TopoDS_Edge.hxx>
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 
@@ -118,6 +127,15 @@ ViewPort::ViewPort(QWidget *parent)
     d_ptr->mContext->SetSelectionSensitivity(obj,
                                              AIS_Shape::SelectionMode(TopAbs_EDGE),
                                              30);
+
+    for(TopExp_Explorer it(shape, TopAbs_ShapeEnum::TopAbs_EDGE); it.More(); it.Next()) {
+        TopoDS_Edge edge = TopoDS::Edge(it.Current());
+        Standard_Real F = 0.;
+        Standard_Real L = 0.;
+        Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, F, L);
+        qDebug() << it.Current().HashCode(INT_MAX) << F << L << curve->FirstParameter() << curve->LastParameter();
+    }
+    qDebug() << "---";
 }
 
 ViewPort::~ViewPort()
@@ -201,6 +219,29 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
     const Aspect_VKeyFlags aFlags = qtMouseModifiers2VKeys(event->modifiers());
     if (d_ptr->UpdateMouseButtons(aPnt, qtMouseButtons2VKeys(event->buttons()), aFlags, false))
         update();
+
+    for(d_ptr->mContext->InitSelected(); d_ptr->mContext->MoreSelected(); d_ptr->mContext->NextSelected()) {
+        Handle(StdSelect_BRepOwner) edgeOwner =
+                Handle(StdSelect_BRepOwner)::DownCast(d_ptr->mContext->SelectedOwner());
+        if (edgeOwner && edgeOwner->Shape().ShapeType() == TopAbs_EDGE) {
+            TopoDS_Edge edge = TopoDS::Edge(edgeOwner->Shape());
+            TopLoc_Location loc;
+            Standard_Real F = 0.;
+            Standard_Real L = 0.;
+            Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, loc, F, L);
+
+            gp_Pnt p0 = curve->Value(F);
+            Handle(AIS_Point) ap0 = new AIS_Point(new Geom_CartesianPoint(p0));
+            d_ptr->mContext->Display(ap0, Standard_True);
+            gp_Pnt p1 = curve->Value((L - F) / 2. + F);
+            Handle(AIS_Point) ap1 = new AIS_Point(new Geom_CartesianPoint(p1));
+            d_ptr->mContext->Display(ap1, Standard_True);
+            gp_Pnt p2 = curve->Value(L);
+            Handle(AIS_Point) ap2 = new AIS_Point(new Geom_CartesianPoint(p2));
+            d_ptr->mContext->Display(ap2, Standard_True);
+            qDebug() << F << L << curve->FirstParameter() << curve->LastParameter();
+        }
+    }
 }
 
 void ViewPort::mouseMoveEvent(QMouseEvent *event)
