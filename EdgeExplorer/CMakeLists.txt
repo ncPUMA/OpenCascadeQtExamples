@@ -7,6 +7,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(PROJECT_SOURCES
     aspectwindow.cpp
     aspectwindow.h
+    brepserializer.cpp
+    brepserializer.h
     main.cpp
     mainwindow.cpp
     mainwindow.h
@@ -25,6 +27,8 @@ set(PROJECT_SOURCES
     ModelLoader/stlloader.cpp
     ModelLoader/stlloader.h
 
+    normaldetector.cpp
+    normaldetector.h
     viewport.cpp
     viewport.h
 )

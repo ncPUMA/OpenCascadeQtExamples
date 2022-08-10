@@ -24,8 +24,6 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) final;
     void wheelEvent(QWheelEvent *event) final;
 
-signals:
-
 private:
     ViewPortPrivate *const d_ptr;
 

@@ -4,31 +4,32 @@
 #include <QMouseEvent>
 
 #include <AIS_InteractiveContext.hxx>
+#include <AIS_Line.hxx>
 #include <AIS_Point.hxx>
 #include <AIS_Shape.hxx>
 #include <AIS_Trihedron.hxx>
 #include <AIS_ViewController.hxx>
 #include <AIS_ViewCube.hxx>
+#include <BOPTools_AlgoTools3D.hxx>
 #include <BRep_Tool.hxx>
 #include <Geom_Axis2Placement.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <Geom_Curve.hxx>
+#include <Graphic3d_Vec2.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <OSD_Environment.hxx>
 #include <StdSelect_BRepOwner.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
+#include <TopoDS_Face.hxx>
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 
 #include "aspectwindow.h"
+#include "brepserializer.h"
 #include "ModelLoader/steploader.h"
-
-class Aspect : public Aspect_Window
-{
-
-};
+#include "normaldetector.h"
 
 class ViewPortPrivate : public AIS_ViewController
 {
@@ -91,12 +92,130 @@ class ViewPortPrivate : public AIS_ViewController
         mView->Redraw();
     }
 
+    void OnSelectionChanged (const Handle(AIS_InteractiveContext)& theCtx,
+                             const Handle(V3d_View)& theView) final {
+        Q_ASSERT(theCtx == mContext && theView == mView);
+
+        // remove subshapes from model and context
+        auto children = mModel->Children();
+        for (const auto &ch : children) {
+            auto o = Handle(AIS_InteractiveObject)::DownCast(ch);
+            if (o) {
+                mContext->Remove(o, Standard_False);
+                mModel->RemoveChild(o);
+            }
+        }
+
+        // deserialize and draw previos edges
+        for (const auto &str : qAsConst(mPreviosEdges)) {
+            auto shape = BrepSerializer::deserialize(str.toStdString());
+            if (shape.ShapeType() == TopAbs_EDGE) {
+                TopoDS_Edge edge = TopoDS::Edge(shape);
+                auto shapeObj = new AIS_Shape(edge);
+                mModel->AddChild(shapeObj);
+                mContext->Display(shapeObj, Standard_False);
+            }
+        }
+        mPreviosEdges.clear();
+
+        // store selected edges and draw points on them
+        for(mContext->InitSelected(); mContext->MoreSelected(); mContext->NextSelected()) {
+            auto edgeOwner = Handle(StdSelect_BRepOwner)::DownCast(mContext->SelectedOwner());
+            if (edgeOwner && edgeOwner->Shape().ShapeType() == TopAbs_EDGE) {
+                TopoDS_Edge edge = TopoDS::Edge(edgeOwner->Shape());
+                std::string serializedEdge = BrepSerializer::serialize(edge);
+                mPreviosEdges << QString::fromStdString(serializedEdge);
+
+                // curve
+                TopLoc_Location loc;
+                Standard_Real F = 0.;
+                Standard_Real L = 0.;
+                auto curve = BRep_Tool::Curve(edge, loc, F, L);
+                qDebug() << "Curve:" << F << L << curve->FirstParameter() << curve->LastParameter();
+
+                // points on curve
+                Standard_Real pos[3] = {
+                    F, // start
+                    (L - F) / 2. + F, // mid
+                    L //end
+                };
+
+                for (auto vl : pos) {
+                    gp_Pnt p = curve->Value(vl);
+                    auto ap = new AIS_Point(new Geom_CartesianPoint(p));
+                    mModel->AddChild(ap);
+                    mContext->Display(ap, Standard_False);
+
+                    // normal
+//                    for (const auto &face : faces) {
+//                        gp_Dir dir;
+//                        BOPTools_AlgoTools3D::GetNormalToFaceOnEdge(edge, face, vl, dir);
+//                        qDebug() << "Normal:" << vl << "\t" << dir.X() << dir.Y() << dir.Z();
+//                    }
+
+//                    gp_Pnt start;
+//                    gp_Vec vec;
+//                    curve->D1(vl, start, vec);
+//                    vec.Reverse();
+//                    qDebug() << "Normal:" << vl << start.X() << start.Y() << start.Z();
+//                    auto line = new AIS_Line(new Geom_CartesianPoint(start), new Geom_CartesianPoint(vec.XYZ() * 10));
+//                    mModel->AddChild(line);
+//                    mContext->Display(line, Standard_False);
+                }
+
+                // faces and normals
+                for (TopExp_Explorer faceExplorer(mModel->Shape(), TopAbs_FACE); faceExplorer.More(); faceExplorer.Next()) {
+                    auto &face = TopoDS::Face(faceExplorer.Current());
+                    if (!face.IsNull()) {
+                        for (TopExp_Explorer edgeExplorer(face, TopAbs_EDGE); edgeExplorer.More(); edgeExplorer.Next()) {
+                            const auto &edgeOnFace = TopoDS::Edge(edgeExplorer.Current());
+                            if (!edgeOnFace.IsNull() && edgeOnFace.IsEqual(edge)) {
+                                auto aisFace = new AIS_Shape(face);
+                                mModel->AddChild(aisFace);
+                                mContext->Display(aisFace, Standard_False);
+
+                                const gp_Dir normal = NormalDetector::getNormal(face, mLastPicked);
+                                const gp_Pnt normalEnd = mLastPicked.Translated(normal);
+                                qDebug() << "Pick     :" << mLastPicked.X() << mLastPicked.Y() << mLastPicked.Z();
+                                qDebug() << "Normal   :" << normal.X() << normal.Y() << normal.Z();
+                                qDebug() << "NormalEnd:" << normalEnd.X() << normalEnd.Y() << normalEnd.Z();
+                                auto line = new AIS_Line(new Geom_CartesianPoint(mLastPicked), new Geom_CartesianPoint(normalEnd));
+                                mModel->AddChild(line);
+                                mContext->Display(line, Standard_False);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        mView->Update();
+    }
+
+    void handleDynamicHighlight(const Handle(AIS_InteractiveContext)& theCtx,
+                                const Handle(V3d_View)& theView) final {
+        AIS_ViewController::handleDynamicHighlight(theCtx, theView);
+
+        Handle(StdSelect_ViewerSelector3d) selector = mContext->MainSelector();
+        if (selector->NbPicked() > 0) {
+            mLastPicked = selector->PickedPoint(1);
+            mLastPicked.Transform(mContext->Location(mModel).Transformation().Inverted());
+        }
+    }
+
     Handle(V3d_Viewer) mViewer;
     Handle(V3d_View) mView;
     Handle(AspectWindow) mAspect;
     Handle(AIS_InteractiveContext) mContext;
 
     Graphic3d_ZLayerId mDeptOffLayer = Graphic3d_ZLayerId_UNKNOWN;
+
+    Handle(AIS_Shape) mModel;
+
+    QStringList mPreviosEdges;
+
+    gp_Pnt mLastPicked;
 };
 
 ViewPort::ViewPort(QWidget *parent)
@@ -115,7 +234,11 @@ ViewPort::ViewPort(QWidget *parent)
     StepLoader loader;
     const TopoDS_Shape shape = loader.load(modelPath);
     Handle(AIS_Shape) obj = new AIS_Shape(shape);
+    d_ptr->mModel = obj;
     d_ptr->mContext->Display(obj, Standard_False);
+    gp_Trsf transform;
+    transform.SetTranslationPart(gp_Vec(10, 20, 30));
+    d_ptr->mContext->SetLocation(obj, transform);
     d_ptr->mContext->SetDisplayMode(obj, AIS_Shaded, Standard_True);
 
     d_ptr->mContext->SetSelectionModeActive(obj,
@@ -127,15 +250,6 @@ ViewPort::ViewPort(QWidget *parent)
     d_ptr->mContext->SetSelectionSensitivity(obj,
                                              AIS_Shape::SelectionMode(TopAbs_EDGE),
                                              30);
-
-    for(TopExp_Explorer it(shape, TopAbs_ShapeEnum::TopAbs_EDGE); it.More(); it.Next()) {
-        TopoDS_Edge edge = TopoDS::Edge(it.Current());
-        Standard_Real F = 0.;
-        Standard_Real L = 0.;
-        Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, F, L);
-        qDebug() << it.Current().HashCode(INT_MAX) << F << L << curve->FirstParameter() << curve->LastParameter();
-    }
-    qDebug() << "---";
 }
 
 ViewPort::~ViewPort()
@@ -208,8 +322,9 @@ void ViewPort::mousePressEvent(QMouseEvent *event)
 {
     const Graphic3d_Vec2i aPnt(event->pos().x(), event->pos().y());
     const Aspect_VKeyFlags aFlags = qtMouseModifiers2VKeys(event->modifiers());
-    if (d_ptr->UpdateMouseButtons(aPnt, qtMouseButtons2VKeys(event->buttons()), aFlags, false))
+    if (d_ptr->UpdateMouseButtons(aPnt, qtMouseButtons2VKeys(event->buttons()), aFlags, false)) {
         update();
+    }
 }
 
 void ViewPort::mouseReleaseEvent(QMouseEvent *event)
@@ -217,30 +332,8 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
     const QPoint pos = event->pos();
     const Graphic3d_Vec2i aPnt(pos.x(), pos.y());
     const Aspect_VKeyFlags aFlags = qtMouseModifiers2VKeys(event->modifiers());
-    if (d_ptr->UpdateMouseButtons(aPnt, qtMouseButtons2VKeys(event->buttons()), aFlags, false))
+    if (d_ptr->UpdateMouseButtons(aPnt, qtMouseButtons2VKeys(event->buttons()), aFlags, false)) {
         update();
-
-    for(d_ptr->mContext->InitSelected(); d_ptr->mContext->MoreSelected(); d_ptr->mContext->NextSelected()) {
-        Handle(StdSelect_BRepOwner) edgeOwner =
-                Handle(StdSelect_BRepOwner)::DownCast(d_ptr->mContext->SelectedOwner());
-        if (edgeOwner && edgeOwner->Shape().ShapeType() == TopAbs_EDGE) {
-            TopoDS_Edge edge = TopoDS::Edge(edgeOwner->Shape());
-            TopLoc_Location loc;
-            Standard_Real F = 0.;
-            Standard_Real L = 0.;
-            Handle(Geom_Curve) curve = BRep_Tool::Curve(edge, loc, F, L);
-
-            gp_Pnt p0 = curve->Value(F);
-            Handle(AIS_Point) ap0 = new AIS_Point(new Geom_CartesianPoint(p0));
-            d_ptr->mContext->Display(ap0, Standard_True);
-            gp_Pnt p1 = curve->Value((L - F) / 2. + F);
-            Handle(AIS_Point) ap1 = new AIS_Point(new Geom_CartesianPoint(p1));
-            d_ptr->mContext->Display(ap1, Standard_True);
-            gp_Pnt p2 = curve->Value(L);
-            Handle(AIS_Point) ap2 = new AIS_Point(new Geom_CartesianPoint(p2));
-            d_ptr->mContext->Display(ap2, Standard_True);
-            qDebug() << F << L << curve->FirstParameter() << curve->LastParameter();
-        }
     }
 }
 
@@ -251,8 +344,7 @@ void ViewPort::mouseMoveEvent(QMouseEvent *event)
     if (d_ptr->UpdateMousePosition(aNewPos,
                                    qtMouseButtons2VKeys(event->buttons()),
                                    qtMouseModifiers2VKeys(event->modifiers()),
-                                   false))
-    {
+                                   false)) {
         update();
     }
 }
@@ -261,6 +353,7 @@ void ViewPort::wheelEvent(QWheelEvent *event)
 {
     const QPoint pos = event->position().toPoint();
     const Graphic3d_Vec2i aPos(pos.x(), pos.y());
-    if (d_ptr->UpdateZoom(Aspect_ScrollDelta(aPos, event->angleDelta().y() / 8)))
+    if (d_ptr->UpdateZoom(Aspect_ScrollDelta(aPos, event->angleDelta().y() / 8))) {
         update();
+    }
 }
