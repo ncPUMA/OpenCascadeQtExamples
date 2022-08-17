@@ -2,9 +2,12 @@
 
 #include <QDebug>
 #include <QMouseEvent>
+#include <QTimer>
 
+#include <AIS_Axis.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_Line.hxx>
+#include <AIS_Manipulator.hxx>
 #include <AIS_Point.hxx>
 #include <AIS_Shape.hxx>
 #include <AIS_Trihedron.hxx>
@@ -12,9 +15,11 @@
 #include <AIS_ViewCube.hxx>
 #include <BOPTools_AlgoTools3D.hxx>
 #include <BRep_Tool.hxx>
+#include <Geom_Axis1Placement.hxx>
 #include <Geom_Axis2Placement.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <Geom_Curve.hxx>
+#include <gp_Quaternion.hxx>
 #include <Graphic3d_Vec2.hxx>
 #include <OpenGl_GraphicDriver.hxx>
 #include <OSD_Environment.hxx>
@@ -54,10 +59,10 @@ class ViewPortPrivate : public AIS_ViewController
         mViewer->SetLightOn();
 
         //ZLayer without depth-test
-        mViewer->AddZLayer(mDeptOffLayer);
-        Graphic3d_ZLayerSettings zSettings = mViewer->ZLayerSettings(mDeptOffLayer);
+        mViewer->AddZLayer(mDepthOffLayer);
+        Graphic3d_ZLayerSettings zSettings = mViewer->ZLayerSettings(mDepthOffLayer);
         zSettings.SetEnableDepthTest(Standard_False);
-        mViewer->SetZLayerSettings(mDeptOffLayer, zSettings);
+        mViewer->SetZLayerSettings(mDepthOffLayer, zSettings);
 
         //Context
         mContext = new AIS_InteractiveContext(mViewer);
@@ -72,8 +77,8 @@ class ViewPortPrivate : public AIS_ViewController
         mContext->Display(ais_axis_cube, Standard_False);
         mContext->SetDisplayMode(ais_axis_cube, AIS_Shaded, Standard_False);
         //Add trihedron
-        Geom_Axis2Placement coords(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.), gp_Dir(1., 0., 0.));
-        Handle(AIS_Trihedron) trihedron = new AIS_Trihedron(new Geom_Axis2Placement(coords));
+        auto coords = new Geom_Axis2Placement(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.), gp_Dir(1., 0., 0.));
+        auto trihedron = new AIS_Trihedron(coords);
         mContext->Display(trihedron, Standard_False);
         mContext->Deactivate(trihedron);
         mView = mContext->CurrentViewer()->CreateView().get();
@@ -145,22 +150,6 @@ class ViewPortPrivate : public AIS_ViewController
                     auto ap = new AIS_Point(new Geom_CartesianPoint(p));
                     mModel->AddChild(ap);
                     mContext->Display(ap, Standard_False);
-
-                    // normal
-//                    for (const auto &face : faces) {
-//                        gp_Dir dir;
-//                        BOPTools_AlgoTools3D::GetNormalToFaceOnEdge(edge, face, vl, dir);
-//                        qDebug() << "Normal:" << vl << "\t" << dir.X() << dir.Y() << dir.Z();
-//                    }
-
-//                    gp_Pnt start;
-//                    gp_Vec vec;
-//                    curve->D1(vl, start, vec);
-//                    vec.Reverse();
-//                    qDebug() << "Normal:" << vl << start.X() << start.Y() << start.Z();
-//                    auto line = new AIS_Line(new Geom_CartesianPoint(start), new Geom_CartesianPoint(vec.XYZ() * 10));
-//                    mModel->AddChild(line);
-//                    mContext->Display(line, Standard_False);
                 }
 
                 // faces and normals
@@ -175,13 +164,27 @@ class ViewPortPrivate : public AIS_ViewController
                                 mContext->Display(aisFace, Standard_False);
 
                                 const gp_Dir normal = NormalDetector::getNormal(face, mLastPicked);
-                                const gp_Pnt normalEnd = mLastPicked.Translated(normal);
+                                const gp_Pnt normalEnd = mLastPicked.Translated(normal.XYZ() * 5);
                                 qDebug() << "Pick     :" << mLastPicked.X() << mLastPicked.Y() << mLastPicked.Z();
                                 qDebug() << "Normal   :" << normal.X() << normal.Y() << normal.Z();
                                 qDebug() << "NormalEnd:" << normalEnd.X() << normalEnd.Y() << normalEnd.Z();
-                                auto line = new AIS_Line(new Geom_CartesianPoint(mLastPicked), new Geom_CartesianPoint(normalEnd));
-                                mModel->AddChild(line);
-                                mContext->Display(line, Standard_False);
+                                auto lineN = new AIS_Line(new Geom_CartesianPoint(mLastPicked), new Geom_CartesianPoint(normalEnd));
+                                lineN->SetWidth(2.);
+                                mModel->AddChild(lineN);
+                                mContext->Display(lineN, Standard_False);
+                                mContext->SetZLayer(lineN, mDepthOffLayer);
+                                gp_Dir axis(0., 0., 1.);
+                                if (normal.IsParallel(axis, Precision::Confusion())) {
+                                    axis = gp_Dir(0., 1., 0.);
+                                }
+                                const gp_Dir normalRotation = normal.Crossed(axis);
+                                const gp_Pnt normalRotationEnd = mLastPicked.Translated(normalRotation.XYZ() * 5);
+                                auto lineV = new AIS_Line(new Geom_CartesianPoint(mLastPicked), new Geom_CartesianPoint(normalRotationEnd));
+                                lineV->SetColor(Quantity_NOC_BLUE);
+                                lineV->SetWidth(2.);
+                                mModel->AddChild(lineV);
+                                mContext->Display(lineV, Standard_False);
+                                mContext->SetZLayer(lineV, mDepthOffLayer);
                                 break;
                             }
                         }
@@ -190,7 +193,7 @@ class ViewPortPrivate : public AIS_ViewController
             }
         }
 
-        mView->Update();
+        mView->Redraw();
     }
 
     void handleDynamicHighlight(const Handle(AIS_InteractiveContext)& theCtx,
@@ -209,12 +212,11 @@ class ViewPortPrivate : public AIS_ViewController
     Handle(AspectWindow) mAspect;
     Handle(AIS_InteractiveContext) mContext;
 
-    Graphic3d_ZLayerId mDeptOffLayer = Graphic3d_ZLayerId_UNKNOWN;
+    Graphic3d_ZLayerId mDepthOffLayer = Graphic3d_ZLayerId_UNKNOWN;
 
     Handle(AIS_Shape) mModel;
 
     QStringList mPreviosEdges;
-
     gp_Pnt mLastPicked;
 };
 
@@ -232,13 +234,22 @@ ViewPort::ViewPort(QWidget *parent)
 
     const char *modelPath = "Models/45deg AdjMirr Adapter Left Rev1.STEP";
     StepLoader loader;
-    const TopoDS_Shape shape = loader.load(modelPath);
-    Handle(AIS_Shape) obj = new AIS_Shape(shape);
+    auto shape = loader.load(modelPath);
+    auto obj = new AIS_Shape(shape);
     d_ptr->mModel = obj;
     d_ptr->mContext->Display(obj, Standard_False);
+    auto coords = new Geom_Axis2Placement(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.), gp_Dir(1., 0., 0.));
+    auto trihedron = new AIS_Trihedron(coords);
+    trihedron->SetSize(15.);
+    d_ptr->mContext->Display(trihedron, Standard_False);
+    d_ptr->mContext->Deactivate(trihedron);
     gp_Trsf transform;
     transform.SetTranslationPart(gp_Vec(10, 20, 30));
+    gp_Quaternion quat;
+    quat.SetEulerAngles(gp_Extrinsic_XYZ, 10., 10., 10.);
+    transform.SetRotationPart(quat);
     d_ptr->mContext->SetLocation(obj, transform);
+    d_ptr->mContext->SetLocation(trihedron, transform);
     d_ptr->mContext->SetDisplayMode(obj, AIS_Shaded, Standard_True);
 
     d_ptr->mContext->SetSelectionModeActive(obj,
