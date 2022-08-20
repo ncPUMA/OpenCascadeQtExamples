@@ -9,6 +9,10 @@ set(PROJECT_SOURCES
     aspectwindow.h
     brepserializer.cpp
     brepserializer.h
+
+    InteractiveObjects/interactivenormal.cpp
+    InteractiveObjects/interactivenormal.h
+
     main.cpp
     mainwindow.cpp
     mainwindow.h

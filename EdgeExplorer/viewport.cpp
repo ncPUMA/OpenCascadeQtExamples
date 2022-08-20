@@ -1,8 +1,10 @@
 #include "viewport.h"
 
+#include <QAction>
 #include <QDebug>
+#include <QElapsedTimer>
+#include <QMenu>
 #include <QMouseEvent>
-#include <QTimer>
 
 #include <AIS_Axis.hxx>
 #include <AIS_InteractiveContext.hxx>
@@ -14,6 +16,7 @@
 #include <AIS_ViewController.hxx>
 #include <AIS_ViewCube.hxx>
 #include <BOPTools_AlgoTools3D.hxx>
+#include <BRepClass3d_SolidClassifier.hxx>
 #include <BRep_Tool.hxx>
 #include <Geom_Axis1Placement.hxx>
 #include <Geom_Axis2Placement.hxx>
@@ -33,8 +36,11 @@
 
 #include "aspectwindow.h"
 #include "brepserializer.h"
+#include "InteractiveObjects/interactivenormal.h"
 #include "ModelLoader/steploader.h"
 #include "normaldetector.h"
+
+static constexpr size_t sPerfPointsCount = 1000000ul;
 
 class ViewPortPrivate : public AIS_ViewController
 {
@@ -105,7 +111,7 @@ class ViewPortPrivate : public AIS_ViewController
         auto children = mModel->Children();
         for (const auto &ch : children) {
             auto o = Handle(AIS_InteractiveObject)::DownCast(ch);
-            if (o) {
+            if (o && !Handle(InteractiveNormal)::DownCast(o)) {
                 mContext->Remove(o, Standard_False);
                 mModel->RemoveChild(o);
             }
@@ -124,71 +130,62 @@ class ViewPortPrivate : public AIS_ViewController
         mPreviosEdges.clear();
 
         // store selected edges and draw points on them
-        for(mContext->InitSelected(); mContext->MoreSelected(); mContext->NextSelected()) {
-            auto edgeOwner = Handle(StdSelect_BRepOwner)::DownCast(mContext->SelectedOwner());
-            if (edgeOwner && edgeOwner->Shape().ShapeType() == TopAbs_EDGE) {
-                TopoDS_Edge edge = TopoDS::Edge(edgeOwner->Shape());
-                std::string serializedEdge = BrepSerializer::serialize(edge);
-                mPreviosEdges << QString::fromStdString(serializedEdge);
+        auto edges = selectedEdges();
+        for (const auto &edge : edges) {
+            std::string serializedEdge = BrepSerializer::serialize(edge);
+            mPreviosEdges << QString::fromStdString(serializedEdge);
 
-                // curve
-                TopLoc_Location loc;
-                Standard_Real F = 0.;
-                Standard_Real L = 0.;
-                auto curve = BRep_Tool::Curve(edge, loc, F, L);
-                qDebug() << "Curve:" << F << L << curve->FirstParameter() << curve->LastParameter();
+            // curve
+            TopLoc_Location loc;
+            Standard_Real F = 0.;
+            Standard_Real L = 0.;
+            auto curve = BRep_Tool::Curve(edge, loc, F, L);
+            qDebug() << "Curve:" << F << L << curve->FirstParameter() << curve->LastParameter();
 
-                // points on curve
-                Standard_Real pos[3] = {
-                    F, // start
-                    (L - F) / 2. + F, // mid
-                    L //end
-                };
+            // points on curve
+            Standard_Real pos[3] = {
+                F, // start
+                (L - F) / 2. + F, // mid
+                L //end
+            };
 
-                for (auto vl : pos) {
-                    gp_Pnt p = curve->Value(vl);
+            TopoDS_Face face;
+            bool hasFace = findFaceByEdge(edge, face);
+            for (auto vl : pos) {
+                gp_Pnt p = curve->Value(vl);
+                if (hasFace) {
+                    // normal
+                    auto aisFace = new AIS_Shape(face);
+                    mModel->AddChild(aisFace);
+                    mContext->Display(aisFace, Standard_False);
+
+                    const gp_Dir normal = NormalDetector::getNormal(face, p);
+                    const gp_Pnt normalEnd = p.Translated(normal.XYZ() * 5);
+                    qDebug() << "Point    :" << p.X() << p.Y() << p.Z();
+                    qDebug() << "Normal   :" << normal.X() << normal.Y() << normal.Z();
+                    qDebug() << "NormalEnd:" << normalEnd.X() << normalEnd.Y() << normalEnd.Z();
+                    auto lineN = new AIS_Line(new Geom_CartesianPoint(p), new Geom_CartesianPoint(normalEnd));
+                    lineN->SetWidth(2.);
+                    mModel->AddChild(lineN);
+                    mContext->Display(lineN, Standard_False);
+                    mContext->SetZLayer(lineN, mDepthOffLayer);
+                    gp_Dir axis(0., 0., 1.);
+                    if (normal.IsParallel(axis, Precision::Confusion())) {
+                        axis = gp_Dir(0., 1., 0.);
+                    }
+                    const gp_Dir normalRotation = normal.Crossed(axis);
+                    const gp_Pnt normalRotationEnd = p.Translated(normalRotation.XYZ() * 5);
+                    auto lineV = new AIS_Line(new Geom_CartesianPoint(p), new Geom_CartesianPoint(normalRotationEnd));
+                    lineV->SetColor(Quantity_NOC_BLUE);
+                    lineV->SetWidth(2.);
+                    mModel->AddChild(lineV);
+                    mContext->Display(lineV, Standard_False);
+                    mContext->SetZLayer(lineV, mDepthOffLayer);
+                } else {
+                    // point
                     auto ap = new AIS_Point(new Geom_CartesianPoint(p));
                     mModel->AddChild(ap);
                     mContext->Display(ap, Standard_False);
-                }
-
-                // faces and normals
-                for (TopExp_Explorer faceExplorer(mModel->Shape(), TopAbs_FACE); faceExplorer.More(); faceExplorer.Next()) {
-                    auto &face = TopoDS::Face(faceExplorer.Current());
-                    if (!face.IsNull()) {
-                        for (TopExp_Explorer edgeExplorer(face, TopAbs_EDGE); edgeExplorer.More(); edgeExplorer.Next()) {
-                            const auto &edgeOnFace = TopoDS::Edge(edgeExplorer.Current());
-                            if (!edgeOnFace.IsNull() && edgeOnFace.IsEqual(edge)) {
-                                auto aisFace = new AIS_Shape(face);
-                                mModel->AddChild(aisFace);
-                                mContext->Display(aisFace, Standard_False);
-
-                                const gp_Dir normal = NormalDetector::getNormal(face, mLastPicked);
-                                const gp_Pnt normalEnd = mLastPicked.Translated(normal.XYZ() * 5);
-                                qDebug() << "Pick     :" << mLastPicked.X() << mLastPicked.Y() << mLastPicked.Z();
-                                qDebug() << "Normal   :" << normal.X() << normal.Y() << normal.Z();
-                                qDebug() << "NormalEnd:" << normalEnd.X() << normalEnd.Y() << normalEnd.Z();
-                                auto lineN = new AIS_Line(new Geom_CartesianPoint(mLastPicked), new Geom_CartesianPoint(normalEnd));
-                                lineN->SetWidth(2.);
-                                mModel->AddChild(lineN);
-                                mContext->Display(lineN, Standard_False);
-                                mContext->SetZLayer(lineN, mDepthOffLayer);
-                                gp_Dir axis(0., 0., 1.);
-                                if (normal.IsParallel(axis, Precision::Confusion())) {
-                                    axis = gp_Dir(0., 1., 0.);
-                                }
-                                const gp_Dir normalRotation = normal.Crossed(axis);
-                                const gp_Pnt normalRotationEnd = mLastPicked.Translated(normalRotation.XYZ() * 5);
-                                auto lineV = new AIS_Line(new Geom_CartesianPoint(mLastPicked), new Geom_CartesianPoint(normalRotationEnd));
-                                lineV->SetColor(Quantity_NOC_BLUE);
-                                lineV->SetWidth(2.);
-                                mModel->AddChild(lineV);
-                                mContext->Display(lineV, Standard_False);
-                                mContext->SetZLayer(lineV, mDepthOffLayer);
-                                break;
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -196,15 +193,66 @@ class ViewPortPrivate : public AIS_ViewController
         mView->Redraw();
     }
 
-    void handleDynamicHighlight(const Handle(AIS_InteractiveContext)& theCtx,
-                                const Handle(V3d_View)& theView) final {
-        AIS_ViewController::handleDynamicHighlight(theCtx, theView);
-
-        Handle(StdSelect_ViewerSelector3d) selector = mContext->MainSelector();
-        if (selector->NbPicked() > 0) {
-            mLastPicked = selector->PickedPoint(1);
-            mLastPicked.Transform(mContext->Location(mModel).Transformation().Inverted());
+    std::vector <TopoDS_Edge> selectedEdges() const {
+        std::vector <TopoDS_Edge> edges;
+        for(mContext->InitSelected(); mContext->MoreSelected(); mContext->NextSelected()) {
+            auto edgeOwner = Handle(StdSelect_BRepOwner)::DownCast(mContext->SelectedOwner());
+            if (edgeOwner && edgeOwner->Shape().ShapeType() == TopAbs_EDGE) {
+                edges.push_back(TopoDS::Edge(edgeOwner->Shape()));
+            }
         }
+        return edges;
+    }
+
+    bool findFaceByEdge(const TopoDS_Edge &edge, TopoDS_Face &face) const {
+        for (TopExp_Explorer faceExplorer(mModel->Shape(), TopAbs_FACE); faceExplorer.More(); faceExplorer.Next()) {
+            auto &curFace = TopoDS::Face(faceExplorer.Current());
+            if (!curFace.IsNull()) {
+                for (TopExp_Explorer edgeExplorer(curFace, TopAbs_EDGE); edgeExplorer.More(); edgeExplorer.Next()) {
+                    const auto &edgeOnFace = TopoDS::Edge(edgeExplorer.Current());
+                    if (!edgeOnFace.IsNull() && edgeOnFace.IsEqual(edge)) {
+                        face = curFace;
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    bool findFaceByPoint(const gp_Pnt &localPnt, TopoDS_Face &face) const {
+        for (TopExp_Explorer anExp(mModel->Shape(), TopAbs_FACE); anExp.More(); anExp.Next()) {
+            auto &curFace = TopoDS::Face(anExp.Current());
+            BRepClass3d_SolidClassifier classifier(curFace);
+            classifier.Perform(localPnt, 1.);
+            const TopAbs_State classifierState = classifier.State();
+            if (classifierState == TopAbs_ON) {
+                face = curFace;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void addNormal(const gp_Pnt &pnt) {
+        TopoDS_Face face;
+        if (!findFaceByPoint(pnt, face)) {
+            return;
+        }
+
+        auto normal = NormalDetector::getNormal(face, pnt);
+        auto normalObj = new InteractiveNormal;
+        normalObj->setLabel("Р1"); //cyrilic test
+        gp_Trsf trsf;
+        trsf.SetTranslationPart(gp_Vec(pnt.XYZ()));
+        gp_Quaternion quat;
+        quat.SetRotation(gp::DZ().XYZ(), normal.XYZ());
+        trsf.SetRotationPart(quat);
+        normalObj->SetLocalTransformation(trsf);
+        mModel->AddChild(normalObj);
+        mContext->Display(normalObj, Standard_True);
+        mContext->SetZLayer(normalObj, mDepthOffLayer);
+        mView->Redraw();
     }
 
     Handle(V3d_Viewer) mViewer;
@@ -217,7 +265,6 @@ class ViewPortPrivate : public AIS_ViewController
     Handle(AIS_Shape) mModel;
 
     QStringList mPreviosEdges;
-    gp_Pnt mLastPicked;
 };
 
 ViewPort::ViewPort(QWidget *parent)
@@ -244,10 +291,10 @@ ViewPort::ViewPort(QWidget *parent)
     d_ptr->mContext->Display(trihedron, Standard_False);
     d_ptr->mContext->Deactivate(trihedron);
     gp_Trsf transform;
-    transform.SetTranslationPart(gp_Vec(10, 20, 30));
+//    transform.SetTranslationPart(gp_Vec(10, 20, 30));
     gp_Quaternion quat;
     quat.SetEulerAngles(gp_Extrinsic_XYZ, 10., 10., 10.);
-    transform.SetRotationPart(quat);
+//    transform.SetRotationPart(quat);
     d_ptr->mContext->SetLocation(obj, transform);
     d_ptr->mContext->SetLocation(trihedron, transform);
     d_ptr->mContext->SetDisplayMode(obj, AIS_Shaded, Standard_True);
@@ -273,6 +320,46 @@ void ViewPort::fitInView()
     d_ptr->mView->FitAll();
     d_ptr->mView->ZFitAll();
     d_ptr->mView->Redraw();
+}
+
+void ViewPort::slNormalV1Test()
+{
+    auto action = qobject_cast <QAction *> (sender());
+    auto edges = d_ptr->selectedEdges();
+    if (edges.empty()) {
+        qDebug() << action->text() << tr("Edge not selected");
+        return;
+    }
+
+    auto edge = edges.front();
+    // curve
+    TopLoc_Location loc;
+    Standard_Real F = 0.;
+    Standard_Real L = 0.;
+    auto curve = BRep_Tool::Curve(edge, loc, F, L);
+    // points on curve
+    std::vector <gp_Pnt> points;
+    points.reserve(sPerfPointsCount);
+    auto step = (L - F) / static_cast <Standard_Real> (sPerfPointsCount);
+    QElapsedTimer t;
+    t.start();
+    for (auto i = 0; i < sPerfPointsCount; ++i) {
+        auto p = F + step * static_cast <Standard_Real> (i);
+        points.push_back(curve->Value(p));
+    }
+    qDebug() << "Find" << points.size() << "points on curve by" << t.elapsed() << "ms.";
+
+    TopoDS_Face face;
+    if (!d_ptr->findFaceByEdge(edge, face)) {
+        qDebug() << action->text() << tr("Face not finded");
+        return;
+    }
+    // normals
+    std::vector <gp_Dir> normals;
+    normals.reserve(points.size());
+    t.restart();
+    normals = NormalDetector::getNormals(face, points);
+    qDebug() << "Find" << normals.size() << "normals on curve by" << t.elapsed() << "ms.";
 }
 
 QPaintEngine *ViewPort::paintEngine() const
@@ -345,6 +432,32 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
     const Aspect_VKeyFlags aFlags = qtMouseModifiers2VKeys(event->modifiers());
     if (d_ptr->UpdateMouseButtons(aPnt, qtMouseButtons2VKeys(event->buttons()), aFlags, false)) {
         update();
+    }
+
+    if (event->button() == Qt::RightButton) {
+        // Detect d_ptr->mModel under cursor
+        d_ptr->mContext->SetSelectionModeActive(d_ptr->mModel,
+                                                AIS_Shape::SelectionMode(TopAbs_SHAPE),
+                                                Standard_True,
+                                                AIS_SelectionModesConcurrency_Single,
+                                                Standard_True);
+        d_ptr->mContext->MainSelector()->Pick(aPnt.x(), aPnt.y(), d_ptr->mView);
+        auto owner = d_ptr->mContext->MainSelector()->Picked(1);
+        if (owner && owner->Selectable() == d_ptr->mModel) {
+            auto point = d_ptr->mContext->MainSelector()->PickedPoint(1);
+            point.Transform(d_ptr->mContext->Location(d_ptr->mModel).Transformation().Inverted());
+            QMenu menu;
+            menu.addAction(tr("Add normal"), this, [this, point](){
+                d_ptr->addNormal(point);
+            });
+            menu.exec(event->globalPos());
+        }
+        d_ptr->mContext->SetSelectionModeActive(d_ptr->mModel,
+                                                AIS_Shape::SelectionMode(TopAbs_SHAPE),
+                                                Standard_False);
+        d_ptr->mContext->SetSelectionModeActive(d_ptr->mModel,
+                                                AIS_Shape::SelectionMode(TopAbs_EDGE),
+                                                Standard_True);
     }
 }
 

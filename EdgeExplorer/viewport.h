@@ -14,6 +14,9 @@ public:
 
     void fitInView();
 
+public Q_SLOTS:
+    void slNormalV1Test();
+
 protected:
     QPaintEngine* paintEngine() const final;
     void paintEvent(QPaintEvent *) final;
