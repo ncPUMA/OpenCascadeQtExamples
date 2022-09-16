@@ -70,7 +70,7 @@ gp_Dir NormalDetector::getNormal(const TopoDS_Face &face, const gp_Pnt &point)
     Standard_Real u1, u2, v1, v2;
     BRepTools::UVBounds(face, u1, u2, v1, v2);
 
-    auto surfAnalis = new ShapeAnalysis_Surface(aSurf);
+    Handle(ShapeAnalysis_Surface) surfAnalis = new ShapeAnalysis_Surface(aSurf);
     const gp_Pnt2d pUV = surfAnalis->ValueOfUV(point, Precision::Confusion());
 
     GeomLProp_SLProps props(aSurf, pUV.X(), pUV.Y(), 1, 0.01);
@@ -90,7 +90,7 @@ std::vector<gp_Dir> NormalDetector::getNormals(const TopoDS_Face &face, const st
     Standard_Real u1, u2, v1, v2;
     BRepTools::UVBounds(face, u1, u2, v1, v2);
 
-    auto surfAnalis = new ShapeAnalysis_Surface(aSurf);
+    Handle(ShapeAnalysis_Surface)  surfAnalis = new ShapeAnalysis_Surface(aSurf);
     for (const auto &point : points) {
         const gp_Pnt2d pUV = surfAnalis->ValueOfUV(point, Precision::Confusion());
         GeomLProp_SLProps props(aSurf, pUV.X(), pUV.Y(), 1, 0.01);

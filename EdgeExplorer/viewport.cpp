@@ -531,6 +531,9 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
             });
             menu.exec(event->globalPos());
         }
+        d_ptr->mContext->SetSelectionModeActive(d_ptr->mModel,
+                                                AIS_Shape::SelectionMode(TopAbs_SHAPE),
+                                                Standard_False);
     }
 }
 
