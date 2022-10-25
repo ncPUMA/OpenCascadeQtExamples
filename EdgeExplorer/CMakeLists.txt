@@ -10,6 +10,8 @@ set(PROJECT_SOURCES
     brepserializer.cpp
     brepserializer.h
 
+    InteractiveObjects/interactivecurve.cpp
+    InteractiveObjects/interactivecurve.h
     InteractiveObjects/interactivenormal.cpp
     InteractiveObjects/interactivenormal.h
     InteractiveObjects/interactivefacenormal.cpp

@@ -20,6 +20,9 @@ public:
     //! add text label to corner point
     void setLabel(const TCollection_AsciiString &txt);
 
+    gp_Pnt2d get2dPnt() const;
+    bool isPicked(const Handle(SelectMgr_EntityOwner) &entity) const;
+
 protected:
     void HilightSelected(const Handle(PrsMgr_PresentationManager) &thePM,
                          const SelectMgr_SequenceOfOwner &) Standard_OVERRIDE;

@@ -15,17 +15,24 @@
 #include <AIS_Trihedron.hxx>
 #include <AIS_ViewController.hxx>
 #include <AIS_ViewCube.hxx>
+#include <Adaptor3d_CurveOnSurface.hxx>
 #include <BOPTools_AlgoTools3D.hxx>
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepAdaptor_HSurface.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
 #include <BRepExtrema_ExtCC.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRep_Tool.hxx>
+#include <GCE2d_MakeSegment.hxx>
+#include <Geom2dAdaptor_HCurve.hxx>
+#include <Geom2d_TrimmedCurve.hxx>
 #include <Geom_Axis1Placement.hxx>
 #include <Geom_Axis2Placement.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <Geom_Curve.hxx>
+#include <GeomLib.hxx>
 #include <gp_Quaternion.hxx>
 #include <Graphic3d_Vec2.hxx>
 #include <OpenGl_GraphicDriver.hxx>
@@ -41,6 +48,7 @@
 
 #include "aspectwindow.h"
 #include "brepserializer.h"
+#include "InteractiveObjects/interactivecurve.h"
 #include "InteractiveObjects/interactivenormal.h"
 #include "InteractiveObjects/interactivefacenormal.h"
 #include "ModelLoader/steploader.h"
@@ -205,6 +213,10 @@ class ViewPortPrivate : public AIS_ViewController
                              const Handle(V3d_View)& theView) final {
         Q_ASSERT(theCtx == mContext && theView == mView);
 
+        if (mStartCut) {
+            return;
+        }
+
         for (const auto &o : mEdgeFaceLines) {
             mContext->Remove(o, Standard_False);
         }
@@ -240,7 +252,7 @@ class ViewPortPrivate : public AIS_ViewController
                                                      Standard_True,
                                                      AIS_SelectionModesConcurrency_Single);
                 }
-            } else if (owner->Shape().ShapeType() == TopAbs_FACE) {
+            } else if (!mPreviosEdge.empty() && owner->Shape().ShapeType() == TopAbs_FACE) {
                 const std::string serializedFace = BrepSerializer::serialize(TopoDS::Face(owner->Shape()));
                 drawEdge(mPreviosEdge, serializedFace, true);
 
@@ -251,6 +263,8 @@ class ViewPortPrivate : public AIS_ViewController
                                                  AIS_Shape::SelectionMode(TopAbs_EDGE),
                                                  Standard_True,
                                                  AIS_SelectionModesConcurrency_Single);
+                mContext->ClearSelected(Standard_False);
+            } else {
                 mContext->ClearSelected(Standard_False);
             }
         }
@@ -333,6 +347,101 @@ class ViewPortPrivate : public AIS_ViewController
         mView->Redraw();
     }
 
+    void addStartCut(const gp_Pnt &pnt) {
+        if (!findFaceByPoint(pnt, mStartCutFace)) {
+            return;
+        }
+
+        mStartCut = new AIS_Point(new Geom_CartesianPoint(pnt));
+        mModel->AddChild(mStartCut);
+        mContext->Display(mStartCut, Standard_False);
+        mContext->Deactivate(mStartCut);
+        mContext->SetZLayer(mStartCut, mDepthOffLayer);
+
+        mView->Redraw();
+
+        mContext->SetSelectionModeActive(mModel,
+                                         AIS_Shape::SelectionMode(TopAbs_FACE),
+                                         Standard_True,
+                                         AIS_SelectionModesConcurrency_Single);
+        mContext->SetSelectionModeActive(mModel,
+                                         AIS_Shape::SelectionMode(TopAbs_EDGE),
+                                         Standard_False);
+    }
+
+    void redrawCutCurve(const Graphic3d_Vec2i &pos) {
+        if (mStartCut) {
+            if (mCutLine) {
+                mContext->Remove(mCutLine, Standard_False);
+            }
+            if (mEndCut) {
+                mContext->Remove(mEndCut, Standard_False);
+                mEndCut.reset(nullptr);
+            }
+
+            mContext->MainSelector()->Pick(pos.x(), pos.y(), mView);
+            auto owner = mContext->MainSelector()->Picked(1);
+            if (owner && owner->Selectable() == mModel) {
+                auto point = mContext->MainSelector()->PickedPoint(1);
+                point.Transform(mContext->Location(mModel).Transformation().Inverted());
+                TopoDS_Face face;
+                if (findFaceByPoint(point, face) && face == mStartCutFace) {
+                    mEndCut = new AIS_Point(new Geom_CartesianPoint(point));
+                    mModel->AddChild(mEndCut);
+                    mContext->Display(mEndCut, Standard_False);
+                    mContext->Deactivate(mEndCut);
+                    mContext->SetZLayer(mEndCut, mDepthOffLayer);
+
+                    auto surf = BRep_Tool::Surface(mStartCutFace);
+                    Handle(ShapeAnalysis_Surface) surfAnalis = new ShapeAnalysis_Surface(surf);
+                    auto startUV = surfAnalis->ValueOfUV(mStartCut->Component()->Pnt(), Precision::Confusion());
+                    auto endUV = surfAnalis->ValueOfUV(point, Precision::Confusion());
+                    Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(startUV, endUV);
+                    Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve),
+                                                         new BRepAdaptor_HSurface(mStartCutFace));
+                    BRepBuilderAPI_MakeEdge builder(curve, surf);
+                    mCutLine = new AIS_Shape(builder.Edge());
+                    mModel->AddChild(mCutLine);
+                    mContext->Display(mCutLine, Standard_False);
+                    mContext->Deactivate(mCutLine);
+                    mContext->SetZLayer(mCutLine, mDepthOffLayer);
+                }
+            }
+            mView->Redraw();
+        }
+    }
+
+    void endCut(const Graphic3d_Vec2i &pos) {
+        if (!mStartCut) {
+            return;
+        }
+
+        if (mEndCut) {
+            if (mCurve) {
+                mContext->Remove(mCurve, Standard_False);
+            }
+
+            mCurve = new InteractiveCurve(mStartCutFace,
+                                          mStartCut->Component()->Pnt(),
+                                          mEndCut->Component()->Pnt());
+            mModel->AddChild(mCurve);
+            mContext->Display(mCurve, Standard_False);
+            mContext->SetZLayer(mCurve, mDepthOffLayer);
+        }
+
+        mContext->Remove(mStartCut, Standard_False);
+        if (mEndCut) {
+            mContext->Remove(mEndCut, Standard_False);
+        }
+        if (mCutLine) {
+            mContext->Remove(mCutLine, Standard_False);
+        }
+        mStartCut.reset(nullptr);
+        mEndCut.reset(nullptr);
+        mCutLine.reset(nullptr);
+        mView->Redraw();
+    }
+
     Handle(V3d_Viewer) mViewer;
     Handle(V3d_View) mView;
     Handle(AspectWindow) mAspect;
@@ -343,6 +452,12 @@ class ViewPortPrivate : public AIS_ViewController
     Handle(AIS_Shape) mModel;
     std::vector <Handle(AIS_InteractiveObject)> mEdgeFaceLines;
     std::string mPreviosEdge;
+
+    TopoDS_Face mStartCutFace;
+    Handle(AIS_Point) mStartCut, mEndCut;
+    Handle(AIS_Shape) mCutLine;
+
+    Handle(InteractiveCurve) mCurve;
 };
 
 ViewPort::ViewPort(QWidget *parent)
@@ -499,6 +614,8 @@ void ViewPort::mousePressEvent(QMouseEvent *event)
     if (d_ptr->UpdateMouseButtons(aPnt, qtMouseButtons2VKeys(event->buttons()), aFlags, false)) {
         update();
     }
+
+    d_ptr->endCut(aPnt);
 }
 
 void ViewPort::mouseReleaseEvent(QMouseEvent *event)
@@ -511,6 +628,50 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
     }
 
     if (event->button() == Qt::RightButton) {
+        if (d_ptr->mCurve) {
+            d_ptr->mContext->MainSelector()->Pick(aPnt.x(), aPnt.y(), d_ptr->mView);
+            if (d_ptr->mContext->MainSelector()->NbPicked()) {
+                auto owner = d_ptr->mContext->MainSelector()->Picked(1);
+                if (owner) {
+                    auto point = d_ptr->mContext->MainSelector()->PickedPoint(1);
+                    point.Transform(d_ptr->mContext->Location(d_ptr->mModel).Transformation().Inverted());
+                    bool ownerIsCurve = owner->Selectable() == d_ptr->mCurve;
+                    if (!ownerIsCurve) {
+                        for (const auto &p : d_ptr->mCurve->Children()) {
+                            if (owner->Selectable() == p) {
+                                ownerIsCurve = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (ownerIsCurve) {
+                        QMenu menu;
+                        auto entity = d_ptr->mContext->MainSelector()->OnePicked();
+                        size_t curveIndex = 0u;
+                        if (d_ptr->mCurve->isCurvePicked(entity, curveIndex)) {
+                            menu.addAction(tr("Add point"), this, [this, curveIndex, point](){
+                                d_ptr->mCurve->addPoint(curveIndex, point);
+                            });
+                            menu.addAction(tr("Create arc of circle"), this, [this, curveIndex, point](){
+                                d_ptr->mCurve->addArcOfCircle(curveIndex, point);
+                            });
+                        }
+                        size_t pointIndex = 0u;
+                        if (d_ptr->mCurve->curveCount() > 1 && d_ptr->mCurve->isPointPicked(entity, curveIndex, pointIndex)) {
+                            menu.addAction(tr("Remove point"), this, [this, curveIndex](){
+                                d_ptr->mCurve->removePoint(curveIndex);
+                            });
+                        }
+                        if (!menu.isEmpty()) {
+                            menu.exec(event->globalPos());
+                            return;
+                        }
+                    }
+                }
+            }
+            return;
+        }
+
         // Detect d_ptr->mModel under cursor
         d_ptr->mContext->SetSelectionModeActive(d_ptr->mModel,
                                                 AIS_Shape::SelectionMode(TopAbs_SHAPE),
@@ -528,6 +689,9 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
             });
             menu.addAction(tr("Add face normal"), this, [this, point](){
                 d_ptr->addFaceNormal(point);
+            });
+            menu.addAction(tr("Add cut line"), this, [this, point]{
+                d_ptr->addStartCut(point);
             });
             menu.exec(event->globalPos());
         }
@@ -547,6 +711,8 @@ void ViewPort::mouseMoveEvent(QMouseEvent *event)
                                    false)) {
         update();
     }
+
+    d_ptr->redrawCutCurve(aNewPos);
 }
 
 void ViewPort::wheelEvent(QWheelEvent *event)

@@ -5,8 +5,6 @@
 #include <cassert>
 #include <map>
 
-#include <QDebug>
-
 #include <Adaptor2d_HLine2d.hxx>
 #include <Adaptor3d_CurveOnSurface.hxx>
 #include <Adaptor3d_HSurface.hxx>
@@ -124,6 +122,7 @@ class InteractiveFaceNormalPrivate
         AspectNormalRing,
         AspectAngleRing,
         AspectOpositeRing,
+        AspectLabel,
     };
 
     enum Selections {
@@ -141,7 +140,7 @@ class InteractiveFaceNormalPrivate
         auto aSurf = BRep_Tool::Surface(mFace);
         Handle(ShapeAnalysis_Surface) surfAnalis = new ShapeAnalysis_Surface(aSurf);
         mUV = surfAnalis->ValueOfUV(pnt, Precision::Confusion());
-        q->SetInfiniteState();
+        q->SetInfiniteState(Standard_False);
         q->SetMutable(Standard_True);
         q->SetAutoHilight(Standard_False);
         auto textAspect = q->Attributes()->TextAspect();
@@ -161,6 +160,7 @@ class InteractiveFaceNormalPrivate
             switch (p.first) {
                 case AspectNormal:
                 case AspectNormalAngle:
+                case AspectLabel:
                     break;
                 case AspectULine:
                 case AspectVLine:
@@ -182,6 +182,7 @@ class InteractiveFaceNormalPrivate
             switch (p.first) {
                 case AspectNormal:
                 case AspectNormalAngle:
+                case AspectLabel:
                     break;
                 case AspectULine:
                 case AspectVLine:
@@ -240,15 +241,14 @@ class InteractiveFaceNormalPrivate
 
         GeomLProp_SLProps props(aSurf, mUV.X(), mUV.Y(), 1, 0.01);
         gp_Dir normal = props.Normal();
+        gp_Dir angle = props.D1U().Normalized();
         if (mFace.Orientation() == TopAbs_REVERSED || mFace.Orientation() == TopAbs_INTERNAL) {
             normal.Reverse();
+            //angle.Reverse();
         }
-        gp_Trsf trsf;
-        trsf.SetRotationPart(mRotation);
-        normal.Transform(trsf);
+        normal.Transform(mRotation);
         normalEnd = pos.Translated(normal.XYZ() * 5.);
-        gp_Dir angle = props.D1U().Normalized();
-        angle.Transform(trsf);
+        angle.Transform(mRotation);
         angleEnd = pos.Translated(angle.XYZ() * 2.5);
     }
 
@@ -262,19 +262,17 @@ class InteractiveFaceNormalPrivate
         if (mFace.Orientation() == TopAbs_REVERSED || mFace.Orientation() == TopAbs_INTERNAL) {
             normal.Reverse();
         }
-        gp_Trsf trsf;
-        trsf.SetRotationPart(mRotation);
-        normal.Transform(trsf);
+        normal.Transform(mRotation);
         angle = props.D1U().Normalized();
-        angle.Transform(trsf);
+        angle.Transform(mRotation);
         oposite = props.D1V().Normalized();
-        oposite.Transform(trsf);
+        oposite.Transform(mRotation);
     }
 
-    void computeSelection(const Handle(SelectMgr_Selection) &selection) {qDebug() << "CompSel";
+    void computeSelection(const Handle(SelectMgr_Selection) &selection) {
         Standard_Boolean bHasSelection = Standard_False;
         std::map <Selections, Standard_Boolean> selected;
-        for (const auto &s : qAsConst(mSelections)) {
+        for (const auto &s : mSelections) {
             const Standard_Boolean val = s.second && s.second->IsSelected();
             selected[s.first] = val;
             bHasSelection |= val;
@@ -317,10 +315,15 @@ class InteractiveFaceNormalPrivate
             {
                 Handle(SelectMgr_EntityOwner) owner = new SelectMgr_EntityOwner(q);
                 owner->SetComesFromDecomposition(Standard_True);
+                auto surf = BRep_Tool::Surface(mFace);
                 Standard_Real u1, u2, v1, v2;
-                BRepTools::UVBounds(mFace, u1, u2, v1, v2);
-                const Adaptor2d_Line2d line(mUV, gp_Vec2d(mUV, gp_Pnt2d(u2, mUV.Y())), 0, Abs(u2 - u1) / 5.);
-                const Adaptor3d_CurveOnSurface curveOnSurf(new Adaptor2d_HLine2d(line), new BRepAdaptor_HSurface(mFace));
+                surf->Bounds(u1, u2, v1, v2);
+                Standard_Real lenK = 1.;
+                if (surf->IsUClosed()) {
+                    lenK /= surf->Value(u1, v1).Distance(surf->Value(u1 + 1, v1));
+                }
+                Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X() + mLen * lenK, mUV.Y()));
+                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
                 Handle(Select3D_SensitiveCurve) sens =
                         new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(curveOnSurf), 50);
                 sens->SetSensitivityFactor(15);
@@ -340,10 +343,15 @@ class InteractiveFaceNormalPrivate
             {
                 Handle(SelectMgr_EntityOwner) owner = new SelectMgr_EntityOwner(q);
                 owner->SetComesFromDecomposition(Standard_True);
+                auto surf = BRep_Tool::Surface(mFace);
                 Standard_Real u1, u2, v1, v2;
-                BRepTools::UVBounds(mFace, u1, u2, v1, v2);
-                const Adaptor2d_Line2d line(mUV, gp_Vec2d(mUV, gp_Pnt2d(mUV.X(), v2)), 0, Abs(v2 - v1) / 5.);
-                const Adaptor3d_CurveOnSurface curveOnSurf(new Adaptor2d_HLine2d(line), new BRepAdaptor_HSurface(mFace));
+                surf->Bounds(u1, u2, v1, v2);
+                Standard_Real lenK = 1.;
+                if (surf->IsVClosed()) {
+                    lenK /= surf->Value(u1, v1).Distance(surf->Value(u1, v1 + 1.));
+                }
+                Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), mUV.Y() + mLen * lenK));
+                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
                 Handle(Select3D_SensitiveCurve) sens =
                         new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(curveOnSurf), 50);
                 sens->SetSensitivityFactor(15);
@@ -396,14 +404,17 @@ class InteractiveFaceNormalPrivate
         calcNormalPoints(pos, normalEnd, angleEnd);
         mAspects[AspectNormal] = createLine(presentation, pos, normalEnd, mNormalColor);
         mAspects[AspectNormalAngle] = createLine(presentation, pos, angleEnd, mNormalAngleColor);
-        Standard_Real alpha = isSelected() ? 1. : 0.;
+        const Standard_Real alpha = isSelected() ? 1. : 0.;
         mAspects[AspectULine] = createULine(presentation, selectionColor, alpha);
         mAspects[AspectVLine] = createVLine(presentation, selectionColor, alpha);
         gp_Dir normalDir, angleDir, opositeDir;
         calcNormalDirections(normalDir, angleDir, opositeDir);
-        mAspects[AspectAngleRing] = createRing(presentation, normalDir, Quantity_NOC_GRAY40, alpha);
-//        mAspects[AspectNormalRing] = createRing(presentation, angleDir, Quantity_NOC_GRAY60, alpha);
-//        mAspects[AspectOpositeRing] = createRing(presentation, opositeDir, selectionColor, alpha);
+        mAspects[AspectNormalRing] = createRing(presentation, normalDir, Quantity_NOC_GRAY40, alpha);
+        mAspects[AspectAngleRing] = createRing(presentation, angleDir, Quantity_NOC_GRAY60, alpha);
+        mAspects[AspectOpositeRing] = createRing(presentation, opositeDir, selectionColor, alpha);
+        if (!mLabel.IsEmpty()) {
+            mAspects[AspectLabel] = createLabel(presentation, pos, Quantity_NOC_YELLOW);
+        }
     }
 
     Handle(Graphic3d_Aspects) createLine(const Handle(Prs3d_Presentation) &presentation,
@@ -487,9 +498,21 @@ class InteractiveFaceNormalPrivate
         return aspect;
     }
 
+    Handle(Graphic3d_Aspects)  createLabel(const Handle(Prs3d_Presentation) &presentation,
+                                           const gp_Pnt &pos,
+                                           const Quantity_Color &color) {
+        auto group = presentation->NewGroup();
+        auto textAspect = new Graphic3d_AspectText3d(*q->Attributes()->TextAspect()->Aspect());
+        textAspect->SetColor(color);
+        group->SetClosed(Standard_True);
+        group->SetGroupPrimitivesAspect(textAspect);
+        Prs3d_Text::Draw(group, new Prs3d_TextAspect(textAspect), mLabel, pos);
+        return textAspect;
+    }
+
     bool isSelected() const {
         for (const auto &s : mSelections) {
-            if (s.second && s.second->IsSelected()) {
+            if (s.second->IsSelected()) {
                 return true;
             }
         }
@@ -509,17 +532,6 @@ class InteractiveFaceNormalPrivate
         return false;
     }
 
-    //! Return Ax1 for specified direction of Ax2.
-    inline static gp_Ax1 getAx1FromAx2Dir(const gp_Ax2 &axis, int index) {
-      switch (index) {
-        case 0: return gp_Ax1(axis.Location(), axis.XDirection());
-        case 1: return gp_Ax1(axis.Location(), axis.YDirection());
-        case 2: return axis.Axis();
-      }
-      assert(false); // getAx1FromAx2Dir: Invalid axis index
-      return axis.Axis();
-    }
-
     bool processDragActionUpdate(const Handle(V3d_View) &view,
                                  const Graphic3d_Vec2i &from,
                                  const Graphic3d_Vec2i &to,
@@ -529,14 +541,14 @@ class InteractiveFaceNormalPrivate
         view->ConvertWithProj(from.x(), from.y(),
                               fromPnt.x(), fromPnt.y(), fromPnt.z(),
                               fromProj.x(), fromProj.y(), fromProj.z());
-        gp_Lin fromLine(gp_Pnt(fromProj.x(), fromProj.y(), fromProj.z()),
-                        gp_Dir(fromPnt.x(), fromPnt.y(), fromPnt.z()));
+        gp_Lin fromLine(gp_Pnt(fromPnt.x(), fromPnt.y(), fromPnt.z()),
+                        gp_Dir(fromProj.x(), fromProj.y(), fromProj.z()));
         Graphic3d_Vec3d toPnt, toProj;
         view->ConvertWithProj(to.x(), to.y(),
                               toPnt.x(), toPnt.y(), toPnt.z(),
                               toProj.x(), toProj.y(), toProj.z());
-        gp_Lin toLine(gp_Pnt(toProj.x(), toProj.y(), toProj.z()),
-                      gp_Dir(toPnt.x(), toPnt.y(), toPnt.z()));
+        gp_Lin toLine(gp_Pnt(toPnt.x(), toPnt.y(), toPnt.z()),
+                      gp_Dir(toProj.x(), toProj.y(), toProj.z()));
         gp_Trsf trsf = parentTransform().Inverted();
         fromLine.Transform(trsf);
         toLine.Transform(trsf);
@@ -556,23 +568,21 @@ class InteractiveFaceNormalPrivate
                     return false;
                 }
 
-                for (int i = 1; i <= fromIntersect.NbPoints(); ++i) {
-                    Standard_Real fromU, fromV, fromW;
-                    fromIntersect.Parameters(i, fromU, fromV, fromW);
-                    qDebug() << i << fromU << fromV;
+                Standard_Integer nbFromIndex = fromIntersect.NbPoints();
+                Standard_Integer nbToIndex = toIntersect.NbPoints();
+                if (mFace.Orientation() == TopAbs_REVERSED || mFace.Orientation() == TopAbs_INTERNAL) {
+                    nbFromIndex = 1;
+                    nbToIndex = 1;
                 }
-
                 Standard_Real fromU, fromV, fromW;
-                fromIntersect.Parameters(1, fromU, fromV, fromW);
+                fromIntersect.Parameters(nbFromIndex, fromU, fromV, fromW);
                 Standard_Real toU, toV, toW;
-                toIntersect.Parameters(1, toU, toV, toW);
+                toIntersect.Parameters(nbToIndex, toU, toV, toW);
                 gp_Pnt2d newUV;
                 if (ownerId == SelectionULine) {
                     newUV = gp_Pnt2d(mStartDragUV.X() + toU - fromU, mStartDragUV.Y());
-                    qDebug() << mStartDragUV.X() << fromU << toU;
                 } else {
                     newUV = gp_Pnt2d(mStartDragUV.X(), mStartDragUV.Y() + toV - fromV);
-                    qDebug() << mStartDragUV.Y() << fromV << toV;
                 }
                 Standard_Real u1, u2, v1, v2;
                 BRepTools::UVBounds(mFace, u1, u2, v1, v2);
@@ -589,21 +599,29 @@ class InteractiveFaceNormalPrivate
             case SelectionAngleRing:
             case SelectionOpositeRing: {
                 gp_Dir normalDir, angleDir, opositeDir;
-                calcNormalDirections(normalDir, angleDir, opositeDir);
-                gp_Dir dir = normalDir;
-                int axisIndex = 0;
-                if (ownerId == SelectionAngleRing) {
-                    dir = angleDir;
-                    axisIndex = 1;
-                } else if (ownerId == SelectionOpositeRing) {
-                    dir = opositeDir;
-                    axisIndex = 2;
-                }
-
                 Handle(ShapeAnalysis_Surface) surfAnalis = new ShapeAnalysis_Surface(aSurf);
                 const gp_Pnt posLoc = surfAnalis->Value(mUV);
+
+                GeomLProp_SLProps props(aSurf, mUV.X(), mUV.Y(), 1, 0.01);
+                normalDir = props.Normal();
+                if (mFace.Orientation() == TopAbs_REVERSED || mFace.Orientation() == TopAbs_INTERNAL) {
+                    normalDir.Reverse();
+                }
+                normalDir.Transform(mStartDragRotation);
+                angleDir = props.D1U().Normalized();
+                angleDir.Transform(mStartDragRotation);
+                opositeDir = props.D1V().Normalized();
+                opositeDir.Transform(mStartDragRotation);
+
+                gp_Dir dir = normalDir;
+                if (ownerId == SelectionAngleRing) {
+                    dir = angleDir;
+                } else if (ownerId == SelectionOpositeRing) {
+                    dir = opositeDir;
+                }
+
                 const gp_Ax2 startPos(posLoc, dir);
-                const gp_Ax1 currAxis = getAx1FromAx2Dir(startPos, axisIndex);
+                const gp_Ax1 currAxis = startPos.Axis();
                 IntAna_IntConicQuad crossFrom(fromLine,
                                               gp_Pln(posLoc, startPos.Direction()),
                                               Precision::Angular(),
@@ -625,7 +643,7 @@ class InteractiveFaceNormalPrivate
 
                 const gp_Dir startAxis = gce_MakeDir(posLoc, fromPos);
                 const gp_Dir toAxis = posLoc.IsEqual(fromPos, Precision::Confusion())
-                  ? getAx1FromAx2Dir(startPos, (axisIndex + 1) % 3).Direction()
+                  ? startPos.Axis().Direction()
                   : gce_MakeDir(posLoc, fromPos);
 
                 const gp_Dir currentAxis = gce_MakeDir(posLoc, toPos);
@@ -642,10 +660,9 @@ class InteractiveFaceNormalPrivate
                     return false;
                 }
 
-                gp_Quaternion quat;
-                qDebug() << currAxis.Direction().X() << currAxis.Direction().Y() << currAxis.Direction().Z() << ownerId << angle * 180. / M_PI;
-                quat.SetVectorAndAngle(dir, angle);
-                mRotation += quat;
+                gp_Trsf trsf;
+                trsf.SetRotation(currAxis, angle);
+                mRotation = trsf * mStartDragRotation;
                 return true;
             }
         }
@@ -663,7 +680,7 @@ class InteractiveFaceNormalPrivate
     InteractiveFaceNormal *q = nullptr;
     TopoDS_Face mFace;
     gp_Pnt2d mUV;
-    gp_Quaternion mRotation;
+    gp_Trsf mRotation;
     Quantity_Color mNormalColor = Quantity_NOC_YELLOW;
     Quantity_Color mNormalAngleColor = Quantity_NOC_BLUE;
     Standard_Real mLen = 5.;
@@ -678,7 +695,7 @@ class InteractiveFaceNormalPrivate
     std::map <Selections, Handle(SelectMgr_EntityOwner)> mSelections;
 
     gp_Pnt2d mStartDragUV;
-    gp_Quaternion mStartDragRotation;
+    gp_Trsf mStartDragRotation;
 };
 
 IMPLEMENT_STANDARD_RTTIEXT(InteractiveFaceNormal, AIS_InteractiveObject)
@@ -698,6 +715,21 @@ InteractiveFaceNormal::~InteractiveFaceNormal()
 void InteractiveFaceNormal::setLabel(const TCollection_AsciiString &txt)
 {
     d->mLabel = txt;
+}
+
+gp_Pnt2d InteractiveFaceNormal::get2dPnt() const
+{
+    return d->mUV;
+}
+
+bool InteractiveFaceNormal::isPicked(const Handle(SelectMgr_EntityOwner) &entity) const
+{
+    for (const auto &s : d->mSelections) {
+        if (s.second == entity) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void InteractiveFaceNormal::HilightSelected(const Handle(PrsMgr_PresentationManager) &,
@@ -720,8 +752,8 @@ void InteractiveFaceNormal::ClearSelected()
 }
 
 void InteractiveFaceNormal::HilightOwnerWithColor(const Handle(PrsMgr_PresentationManager) &thePM,
-                                                   const Handle(Prs3d_Drawer) &theStyle,
-                                                   const Handle(SelectMgr_EntityOwner) &theOwner)
+                                                  const Handle(Prs3d_Drawer) &theStyle,
+                                                  const Handle(SelectMgr_EntityOwner) &theOwner)
 {
     auto presentation = GetHilightPresentation(thePM);
     if (presentation.IsNull()) {
@@ -758,11 +790,11 @@ void InteractiveFaceNormal::ComputeSelection(const Handle(SelectMgr_Selection) &
 }
 
 Standard_Boolean InteractiveFaceNormal::ProcessDragging(const Handle(AIS_InteractiveContext) &context,
-                                                         const Handle(V3d_View) &view,
-                                                         const Handle(SelectMgr_EntityOwner) &owner,
-                                                         const Graphic3d_Vec2i &from,
-                                                         const Graphic3d_Vec2i &to,
-                                                         const AIS_DragAction action)
+                                                        const Handle(V3d_View) &view,
+                                                        const Handle(SelectMgr_EntityOwner) &owner,
+                                                        const Graphic3d_Vec2i &from,
+                                                        const Graphic3d_Vec2i &to,
+                                                        const AIS_DragAction action)
 {
     auto owId = d->SelectionNormalAndAngle;
     if (!d->isSelected() || !d->ownerId(owId, owner)) {
@@ -813,11 +845,6 @@ void InteractiveFaceNormal::Compute(const Handle(PrsMgr_PresentationManager) &,
             selectionColor = ctx->SelectionStyle()->Color();
         }
     }
-
-    Handle(Prs3d_Drawer) drawer = new Prs3d_Drawer();
-    drawer->SetUIsoAspect(new Prs3d_IsoAspect(Quantity_NOC_GREEN, Aspect_TOL_SOLID, 2., 1));
-    drawer->SetVIsoAspect(new Prs3d_IsoAspect(Quantity_NOC_BLUE, Aspect_TOL_SOLID, 2., 1));
-    StdPrs_Isolines::Add(presentation, d->mFace, drawer, 0.);
 
     d->compute(presentation, selectionColor);
 }
