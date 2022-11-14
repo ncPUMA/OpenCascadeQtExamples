@@ -16,6 +16,8 @@ set(PROJECT_SOURCES
     InteractiveObjects/interactivenormal.h
     InteractiveObjects/interactivefacenormal.cpp
     InteractiveObjects/interactivefacenormal.h
+    InteractiveObjects/interactivefacenormalserializer.cpp
+    InteractiveObjects/interactivefacenormalserializer.h
 
     main.cpp
     mainwindow.cpp

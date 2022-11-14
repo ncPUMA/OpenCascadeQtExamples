@@ -3,6 +3,7 @@
 #include <QAction>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QJsonDocument>
 #include <QMenu>
 #include <QMouseEvent>
 
@@ -51,10 +52,24 @@
 #include "InteractiveObjects/interactivecurve.h"
 #include "InteractiveObjects/interactivenormal.h"
 #include "InteractiveObjects/interactivefacenormal.h"
+#include "InteractiveObjects/interactivefacenormalserializer.h"
 #include "ModelLoader/steploader.h"
 #include "normaldetector.h"
 
 static constexpr size_t sPerfPointsCount = 1000000ul;
+
+class CurveObserver : public InteractiveCurve::Observer
+{
+    friend class ViewPort;
+
+    void handleChanged() override {
+        if (mViewport) {
+            mViewport->debugCurve();
+        }
+    }
+
+    ViewPort *mViewport = nullptr;;
+};
 
 class ViewPortPrivate : public AIS_ViewController
 {
@@ -303,7 +318,10 @@ class ViewPortPrivate : public AIS_ViewController
         std::map <Standard_Real, TopoDS_Face> faces;
         for (TopExp_Explorer anExp(mModel->Shape(), TopAbs_FACE); anExp.More(); anExp.Next()) {
             auto &curFace = TopoDS::Face(anExp.Current());
-            faces[BRepExtrema_DistShapeShape(curFace, builder.Vertex()).Value()] = curFace;
+            BRepExtrema_DistShapeShape extrema(curFace, builder.Vertex(), Extrema_ExtFlag_MINMAX, Extrema_ExtAlgo_Tree);
+            if (extrema.IsDone()) {
+                faces[extrema.Value()] = curFace;
+            }
         }
         if (!faces.empty()) {
             face = faces.cbegin()->second;
@@ -427,6 +445,7 @@ class ViewPortPrivate : public AIS_ViewController
             mModel->AddChild(mCurve);
             mContext->Display(mCurve, Standard_False);
             mContext->SetZLayer(mCurve, mDepthOffLayer);
+            mCurve->addObserver(&mCurveObserver);
         }
 
         mContext->Remove(mStartCut, Standard_False);
@@ -458,6 +477,10 @@ class ViewPortPrivate : public AIS_ViewController
     Handle(AIS_Shape) mCutLine;
 
     Handle(InteractiveCurve) mCurve;
+    CurveObserver mCurveObserver;
+
+    NCollection_DataMap <TopoDS_Face, QByteArray> mSerializedNormals;
+    NCollection_DataMap <TopoDS_Face, QByteArray> mSerializedCurves;
 };
 
 ViewPort::ViewPort(QWidget *parent)
@@ -499,6 +522,7 @@ ViewPort::ViewPort(QWidget *parent)
                                             AIS_Shape::SelectionMode(TopAbs_EDGE),
                                             Standard_True,
                                             AIS_SelectionModesConcurrency_Single);
+    d_ptr->mCurveObserver.mViewport = this;
 }
 
 ViewPort::~ViewPort()
@@ -511,6 +535,19 @@ void ViewPort::fitInView()
     d_ptr->mView->FitAll();
     d_ptr->mView->ZFitAll();
     d_ptr->mView->Redraw();
+}
+
+void ViewPort::debugCurve() const
+{
+    auto curvesCount = d_ptr->mCurve->curvesCount();
+    for (size_t i = 0; i < curvesCount; ++i) {
+        Standard_Real min, max;
+        if (d_ptr->mCurve->getMinMaxUParameter(i, min, max)) {
+            qDebug() << i << "min:" << min << "max:" << max;
+        } else {
+            qDebug() << i << "no min max";
+        }
+    }
 }
 
 void ViewPort::slNormalV1Test()
@@ -628,48 +665,75 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
     }
 
     if (event->button() == Qt::RightButton) {
-        if (d_ptr->mCurve) {
-            d_ptr->mContext->MainSelector()->Pick(aPnt.x(), aPnt.y(), d_ptr->mView);
-            if (d_ptr->mContext->MainSelector()->NbPicked()) {
-                auto owner = d_ptr->mContext->MainSelector()->Picked(1);
-                if (owner) {
-                    auto point = d_ptr->mContext->MainSelector()->PickedPoint(1);
-                    point.Transform(d_ptr->mContext->Location(d_ptr->mModel).Transformation().Inverted());
-                    bool ownerIsCurve = owner->Selectable() == d_ptr->mCurve;
-                    if (!ownerIsCurve) {
-                        for (const auto &p : d_ptr->mCurve->Children()) {
-                            if (owner->Selectable() == p) {
-                                ownerIsCurve = true;
-                                break;
-                            }
-                        }
-                    }
-                    if (ownerIsCurve) {
-                        QMenu menu;
-                        auto entity = d_ptr->mContext->MainSelector()->OnePicked();
-                        size_t curveIndex = 0u;
-                        if (d_ptr->mCurve->isCurvePicked(entity, curveIndex)) {
-                            menu.addAction(tr("Add point"), this, [this, curveIndex, point](){
-                                d_ptr->mCurve->addPoint(curveIndex, point);
-                            });
-                            menu.addAction(tr("Create arc of circle"), this, [this, curveIndex, point](){
-                                d_ptr->mCurve->addArcOfCircle(curveIndex, point);
-                            });
-                        }
-                        size_t pointIndex = 0u;
-                        if (d_ptr->mCurve->curveCount() > 1 && d_ptr->mCurve->isPointPicked(entity, curveIndex, pointIndex)) {
-                            menu.addAction(tr("Remove point"), this, [this, curveIndex](){
-                                d_ptr->mCurve->removePoint(curveIndex);
-                            });
-                        }
-                        if (!menu.isEmpty()) {
-                            menu.exec(event->globalPos());
-                            return;
+        d_ptr->mContext->MainSelector()->Pick(aPnt.x(), aPnt.y(), d_ptr->mView);
+        if (d_ptr->mContext->MainSelector()->NbPicked()) {
+            auto owner = d_ptr->mContext->MainSelector()->Picked(1);
+            if (owner) {
+                auto point = d_ptr->mContext->MainSelector()->PickedPoint(1);
+                point.Transform(d_ptr->mContext->Location(d_ptr->mModel).Transformation().Inverted());
+                bool ownerIsCurve = owner->Selectable() == d_ptr->mCurve;
+                if (d_ptr->mCurve && !ownerIsCurve) {
+                    for (const auto &p : d_ptr->mCurve->Children()) {
+                        if (owner->Selectable() == p) {
+                            ownerIsCurve = true;
+                            break;
                         }
                     }
                 }
+                if (ownerIsCurve) {
+                    QMenu menu;
+                    auto entity = d_ptr->mContext->MainSelector()->OnePicked();
+                    size_t curveIndex = 0u;
+                    if (d_ptr->mCurve->isCurvePicked(entity, curveIndex)) {
+                        menu.addAction(tr("Add point"), this, [this, curveIndex, point](){
+                            d_ptr->mCurve->addCurve(curveIndex, point);
+                        });
+                        menu.addAction(tr("Create arc of circle"), this, [this, curveIndex, point](){
+                            d_ptr->mCurve->addArcOfCircle(curveIndex, point);
+                        });
+                    }
+                    size_t pointIndex = 0u;
+                    if (d_ptr->mCurve->curvesCount() > 1 && d_ptr->mCurve->isPointPicked(entity, curveIndex, pointIndex)) {
+                        menu.addAction(tr("Remove point"), this, [this, curveIndex](){
+                            d_ptr->mCurve->removeCurve(curveIndex);
+                        });
+                    }
+                    if (!menu.isEmpty()) {
+                        menu.addSeparator();
+                    }
+                    menu.addAction(tr("Save"), this, [this](){
+                        QJsonDocument doc(d_ptr->mCurve->toJson());
+                        d_ptr->mSerializedCurves.UnBind(d_ptr->mCurve->face());
+                        d_ptr->mSerializedCurves.Bind(d_ptr->mCurve->face(), doc.toJson());
+                    });
+                    if (!menu.isEmpty()) {
+                        menu.addSeparator();
+                    }
+                    menu.addAction(tr("Remove cut line"), this, [this](){
+                        d_ptr->mContext->Remove(d_ptr->mCurve, Standard_True);
+                        d_ptr->mCurve.reset(nullptr);
+                    });
+                    if (!menu.isEmpty()) {
+                        menu.exec(event->globalPos());
+                    }
+                    return;
+                }
+
+                auto normal = Handle(InteractiveFaceNormal)::DownCast(owner->Selectable());
+                if (normal) {
+                    QMenu menu;
+                    menu.addAction(tr("Remove %1").arg(normal->getLabel().ToCString()), this, [this, normal](){
+                        d_ptr->mContext->Remove(normal, Standard_True);
+                    });
+                    menu.addAction(tr("Save %1").arg(normal->getLabel().ToCString()), this, [this, normal](){
+                        QJsonDocument doc(InteractiveFaceNormalSerializer::serialize(normal));
+                        d_ptr->mSerializedNormals.UnBind(normal->face());
+                        d_ptr->mSerializedNormals.Bind(normal->face(), doc.toJson());
+                    });
+                    menu.exec(event->globalPos());
+                    return;
+                }
             }
-            return;
         }
 
         // Detect d_ptr->mModel under cursor
@@ -693,6 +757,55 @@ void ViewPort::mouseReleaseEvent(QMouseEvent *event)
             menu.addAction(tr("Add cut line"), this, [this, point]{
                 d_ptr->addStartCut(point);
             });
+
+            TopoDS_Face face;
+            if (d_ptr->findFaceByPoint(point, face)) {
+                auto normalValue = d_ptr->mSerializedNormals.Seek(face);
+                if (normalValue) {
+                    menu.addSeparator();
+                    menu.addAction(tr("Load point"), this, [this, normalValue]{
+                        auto normal = InteractiveFaceNormalSerializer::deserialize(QJsonDocument::fromJson(*normalValue).object());
+                        if (normal) {
+                            d_ptr->mModel->AddChild(normal);
+                            d_ptr->mContext->Display(normal, Standard_True);
+                            d_ptr->mContext->SetZLayer(normal, d_ptr->mDepthOffLayer);
+                            d_ptr->mView->Redraw();
+                        }
+                    });
+                }
+
+                auto curveValue = d_ptr->mSerializedCurves.Seek(face);
+                if (curveValue) {
+                    menu.addSeparator();
+                    menu.addAction(tr("Load curve"), this, [this, curveValue]{
+                        auto curve = InteractiveCurve::fromJson(QJsonDocument::fromJson(*curveValue).object());
+                        if (curve) {
+                            if (d_ptr->mCurve) {
+                                d_ptr->mContext->Remove(d_ptr->mCurve, Standard_False);
+                            }
+
+                            d_ptr->mCurve = curve;
+                            d_ptr->mModel->AddChild(d_ptr->mCurve);
+                            d_ptr->mContext->Display(d_ptr->mCurve, Standard_False);
+                            d_ptr->mContext->SetZLayer(d_ptr->mCurve, d_ptr->mDepthOffLayer);
+                            d_ptr->mCurve->addObserver(&d_ptr->mCurveObserver);
+
+                            d_ptr->mContext->Remove(d_ptr->mStartCut, Standard_False);
+                            if (d_ptr->mEndCut) {
+                                d_ptr->mContext->Remove(d_ptr->mEndCut, Standard_False);
+                            }
+                            if (d_ptr->mCutLine) {
+                                d_ptr->mContext->Remove(d_ptr->mCutLine, Standard_False);
+                            }
+                            d_ptr->mStartCut.reset(nullptr);
+                            d_ptr->mEndCut.reset(nullptr);
+                            d_ptr->mCutLine.reset(nullptr);
+                            d_ptr->mView->Redraw();
+                        }
+                    });
+                }
+            }
+
             menu.exec(event->globalPos());
         }
         d_ptr->mContext->SetSelectionModeActive(d_ptr->mModel,

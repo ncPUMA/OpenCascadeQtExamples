@@ -3,31 +3,53 @@
 #include <list>
 #include <memory>
 
-#include <QDebug>
+#include <QJsonObject>
+#include <QJsonArray>
 
 #include <Adaptor3d_CurveOnSurface.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <BRep_Tool.hxx>
 #include <BRepAdaptor_HSurface.hxx>
 #include <GCE2d_MakeArcOfCircle.hxx>
+#include <GCE2d_MakeArcOfEllipse.hxx>
 #include <GCE2d_MakeSegment.hxx>
 #include <GeomAdaptor.hxx>
 #include <Geom2dAdaptor_HCurve.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <GeomLib.hxx>
+#include <gp_Quaternion.hxx>
 #include <Prs3d_LineAspect.hxx>
 #include <Select3D_SensitiveCurve.hxx>
 #include <StdPrs_Curve.hxx>
 #include <TopoDS_Face.hxx>
 
 #include "interactivefacenormal.h"
+#include "interactivefacenormalserializer.h"
 
 class Point : public InteractiveFaceNormal
 {
 public:
-    Point(Handle(InteractiveCurve) curve, const TopoDS_Face &face, const gp_Pnt &pnt)
-        : InteractiveFaceNormal(face, pnt)
-        , mCurve(curve) { }
+    static Handle(Point) createPoint(Handle(InteractiveCurve) curve, const TopoDS_Face &face, const gp_Pnt &pnt) {
+        Handle(Point) point = new Point(curve, face, pnt);
+        curve->AddChild(point);
+        auto context = curve->GetContext();
+        if (context) {
+            context->Display(point, Standard_False);
+            context->SetSelectionModeActive(point, 2, Standard_True);
+        }
+        return point;
+    }
+
+    static Handle(Point) createPoint(Handle(InteractiveCurve) curve, const QJsonObject &obj) {
+        auto normal = InteractiveFaceNormalSerializer::deserialize(obj);
+        if (!normal) {
+            return nullptr;
+        }
+        Handle(Point) point = new Point(curve, normal->face(), normal->get2dPnt(), normal->getRotation());
+        point->setLabel(normal->getLabel());
+        curve->AddChild(point);
+        return point;
+    }
 
     ~Point() {
         mCurve.reset(nullptr);
@@ -51,12 +73,21 @@ public:
                     context->RecomputeSelectionOnly(mCurve);
                     break;
             }
+            mCurve->notify();
             return true;
         }
         return false;
     }
 
 private:
+    Point(Handle(InteractiveCurve) curve, const TopoDS_Face &face, const gp_Pnt &pnt)
+        : InteractiveFaceNormal(face, pnt)
+        , mCurve(curve) { }
+
+    Point(Handle(InteractiveCurve) curve, const TopoDS_Face &face, const gp_Pnt2d &uv, const gp_Quaternion &rotation)
+        : InteractiveFaceNormal(face, uv, rotation)
+        , mCurve(curve) { }
+
     Handle(InteractiveCurve) mCurve;
 };
 
@@ -66,6 +97,12 @@ class InteractiveCurvePrivate
 
     struct Curve
     {
+        enum CurveTypes
+        {
+            CT_Line,
+            CT_ArcOfCircle,
+        };
+
         Curve(const Quantity_Color &color, Standard_Real width) {
             drawer = new Prs3d_Drawer();
             aspect = new Graphic3d_AspectLine3d(color, Aspect_TOL_SOLID, width);
@@ -75,6 +112,8 @@ class InteractiveCurvePrivate
         }
 
         virtual ~Curve() = default;
+
+        virtual CurveTypes type() const = 0;
 
         void SetZLayer(const Graphic3d_ZLayerId layerId) {
             for (auto &p : getPoints()) {
@@ -89,19 +128,10 @@ class InteractiveCurvePrivate
             }
         }
 
-        virtual std::vector <Handle(Point)> getPoints() const {
-            std::vector <Handle(Point)> res;
-            res.push_back(lastPoint);
-            return res;
-        }
+        virtual std::vector <Handle(Point)> getPoints() const  = 0;
 
         virtual Adaptor3d_CurveOnSurface getCurve(const TopoDS_Face &face,
-                                                  Handle(Point) &start) const {
-            auto first = start->get2dPnt();
-            auto last = lastPoint->get2dPnt();
-            Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(first, last);
-            return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(face));
-        }
+                                                  Handle(Point) &start) const  = 0;
 
         void Draw(const Handle(Prs3d_Presentation) &presentation,
                   const TopoDS_Face &face,
@@ -119,34 +149,65 @@ class InteractiveCurvePrivate
             return false;
         }
 
-        Handle(Point) lastPoint;
         Handle(Graphic3d_AspectLine3d) aspect;
         Handle(Prs3d_Drawer) drawer;
         Handle(SelectMgr_EntityOwner) owner;
     };
 
-    struct ArcOfCircle : public Curve
+    struct Line :public Curve
     {
-        ArcOfCircle(const Quantity_Color &color, Standard_Real width)
-            : Curve(color, width) { }
+        Line(const Quantity_Color &color, Standard_Real width, const Handle(Point) &point)
+            : Curve(color, width) {
+            mLastPoint = point;
+        }
+
+        CurveTypes type() const override { return CT_Line; }
 
         std::vector <Handle(Point)> getPoints() const override {
             std::vector <Handle(Point)> res;
-            res.push_back(midlePoint);
-            res.push_back(lastPoint);
+            res.push_back(mLastPoint);
             return res;
         }
 
         Adaptor3d_CurveOnSurface getCurve(const TopoDS_Face &face,
                                           Handle(Point) &start) const override {
             auto first = start->get2dPnt();
-            auto midle = midlePoint->get2dPnt();
-            auto last = lastPoint->get2dPnt();
+            auto last = mLastPoint->get2dPnt();
+            Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(first, last);
+            return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(face));
+        }
+
+        Handle(Point) mLastPoint;
+    };
+
+    struct ArcOfCircle : public Curve
+    {
+        ArcOfCircle(const Quantity_Color &color, Standard_Real width,
+                    const Handle(Point) &midPoint, const Handle(Point) &lastPoint)
+            : Curve(color, width)
+            , mMidlePoint(midPoint)
+            , mLastPoint(lastPoint) { }
+
+        CurveTypes type() const override { return CT_ArcOfCircle; }
+
+        std::vector <Handle(Point)> getPoints() const override {
+            std::vector <Handle(Point)> res;
+            res.push_back(mMidlePoint);
+            res.push_back(mLastPoint);
+            return res;
+        }
+
+        Adaptor3d_CurveOnSurface getCurve(const TopoDS_Face &face,
+                                          Handle(Point) &start) const override {
+            auto first = start->get2dPnt();
+            auto midle = mMidlePoint->get2dPnt();
+            auto last = mLastPoint->get2dPnt();
             Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeArcOfCircle(first, midle, last);
             return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(face));
         }
 
-        Handle(Point) midlePoint;
+        Handle(Point) mMidlePoint;
+        Handle(Point) mLastPoint;
     };
 
     void computeSelection(const Handle(SelectMgr_Selection) &selection) {
@@ -167,7 +228,7 @@ class InteractiveCurvePrivate
                 sens->SetSensitivityFactor(5);
                 selection->Add(sens);
             }
-            lastPoint = (*it++)->lastPoint;
+            lastPoint = (*it++)->getPoints().back();
         }
     }
 
@@ -177,7 +238,7 @@ class InteractiveCurvePrivate
         while (it != mCurves.cend()) {
             (*it)->aspect->SetColor(((*it)->owner && (*it)->owner->IsSelected()) ? selectionColor : mCurveColor);
             (*it)->Draw(presentation, mFace, lastPoint);
-            lastPoint = (*it++)->lastPoint;
+            lastPoint = (*it++)->getPoints().back();
         }
     }
 
@@ -196,7 +257,7 @@ class InteractiveCurvePrivate
                 curve->drawer->SetLineAspect(new Prs3d_LineAspect(curve->aspect));
                 curve->Draw(presentation, mFace, lastPoint);
             }
-            lastPoint = curve->lastPoint;
+            lastPoint = curve->getPoints().back();
         }
     }
 
@@ -208,7 +269,7 @@ class InteractiveCurvePrivate
         }
     }
 
-    void addPoint(size_t index, const gp_Pnt &pnt) {
+    void addCurve(size_t index, const gp_Pnt &pnt) {
         auto it = mCurves.begin();
         while (it != mCurves.end()) {
             if (index > 0) {
@@ -217,18 +278,14 @@ class InteractiveCurvePrivate
                 continue;
             }
 
-            auto curve = std::make_shared<Curve>(mCurveColor, mCurveWidth);
-            curve->lastPoint = new Point(q, mFace, pnt);
-            q->AddChild(curve->lastPoint);
-            q->GetContext()->Display(curve->lastPoint, Standard_False);
-            q->GetContext()->SetSelectionModeActive(curve->lastPoint, 2, Standard_True);
+            auto curve = std::make_shared<Line>(mCurveColor, mCurveWidth, Point::createPoint(q, mFace, pnt));
             curve->SetZLayer(mFirstPoint->ZLayer());
             mCurves.insert(it, curve);
             break;
         }
     }
 
-    void removePoint(size_t index) {
+    void removeCurve(size_t index) {
         auto it = mCurves.begin();
         while (it != mCurves.end()) {
             if (index > 0) {
@@ -249,30 +306,36 @@ class InteractiveCurvePrivate
         auto it = mCurves.begin();
         auto lastPnt = mFirstPoint;
         while (it != mCurves.end()) {
-            lastPnt = (*it)->lastPoint;
+            lastPnt = (*it)->getPoints().back();
             if (index > 0) {
                 --index;
                 ++it;
                 continue;
             }
 
-            for (auto &p : (*it)->getPoints()) {
-                q->GetContext()->Remove(p, Standard_False);
-            }
             it = mCurves.erase(it);
 
-            auto arc = std::make_shared<ArcOfCircle>(mCurveColor, mCurveWidth);
-            arc->midlePoint = new Point(q, mFace, pnt);
-            q->AddChild(arc->midlePoint);
-            q->GetContext()->Display(arc->midlePoint, Standard_False);
-            q->GetContext()->SetSelectionModeActive(arc->midlePoint, 2, Standard_True);
-            arc->lastPoint = lastPnt;
-            q->AddChild(arc->lastPoint);
-            q->GetContext()->Display(arc->lastPoint, Standard_False);
-            q->GetContext()->SetSelectionModeActive(arc->lastPoint, 2, Standard_True);
+            auto arc = std::make_shared<ArcOfCircle>(mCurveColor, mCurveWidth,
+                                                     Point::createPoint(q, mFace, pnt), lastPnt);
             arc->SetZLayer(mFirstPoint->ZLayer());
             mCurves.insert(it, arc);
             break;
+        }
+    }
+
+    void updatePointsLabel() {
+        mFirstPoint->setLabel("T1");
+        Standard_Integer index = 1;
+        for (auto &curve : mCurves) {
+            for (auto &p : curve->getPoints()) {
+                p->setLabel(TCollection_AsciiString("T").Cat(++index));
+            }
+        }
+    }
+
+    void notify() {
+        for (auto o : mObservers) {
+            o->handleChanged();
         }
     }
 
@@ -283,6 +346,8 @@ class InteractiveCurvePrivate
 
     Standard_Real mCurveWidth = 2.;
     Quantity_Color mCurveColor = Quantity_NOC_RED;
+
+    std::vector <InteractiveCurve::Observer *> mObservers;
 };
 
 IMPLEMENT_STANDARD_RTTIEXT(InteractiveCurve, AIS_InteractiveObject)
@@ -297,13 +362,11 @@ InteractiveCurve::InteractiveCurve(const TopoDS_Face &face, const gp_Pnt &startO
 
     d->q = this;
     d->mFace = face;
-    d->mFirstPoint = new Point(this, face, startOnFace);
-    AddChild(d->mFirstPoint);
-
-    auto curve = std::make_shared<InteractiveCurvePrivate::Curve>(d->mCurveColor, d->mCurveWidth);
-    curve->lastPoint = new Point(this, face, endOnFace);
-    AddChild(curve->lastPoint);
+    d->mFirstPoint = Point::createPoint(this, face, startOnFace);
+    auto curve = std::make_shared <InteractiveCurvePrivate::Line>
+            (d->mCurveColor, d->mCurveWidth, Point::createPoint(this, d->mFace, endOnFace));
     d->mCurves.push_back(curve);
+    d->updatePointsLabel();
 }
 
 InteractiveCurve::~InteractiveCurve()
@@ -348,9 +411,117 @@ void InteractiveCurve::ClearSelected()
     GetContext()->RecomputePrsOnly(this, Standard_True);
 }
 
-size_t InteractiveCurve::InteractiveCurve::curveCount() const
+TopoDS_Face InteractiveCurve::face() const
+{
+    return d->mFace;
+}
+
+size_t InteractiveCurve::curvesCount() const
 {
     return d->mCurves.size();
+}
+
+size_t InteractiveCurve::normalsCount() const
+{
+    size_t res = 1;
+    for (const auto &curve : d->mCurves) {
+        res += curve->getPoints().size();
+    }
+    return res;
+}
+
+size_t InteractiveCurve::curveNormalsCount(size_t curveIndex) const
+{
+    if (curveIndex < d->mCurves.size()) {
+        auto it = d->mCurves.cbegin();
+        std::advance(it, curveIndex);
+        return (*it)->getPoints().size();
+    }
+    return 0;
+}
+
+bool InteractiveCurve::getNormal(size_t index, gp_Pnt &pnt, gp_Quaternion &rotation) const
+{
+    auto point = d->mFirstPoint;
+    auto itCurves = d->mCurves.cbegin();
+    auto points = (*itCurves)->getPoints();
+    auto itPoints = points.cbegin();
+    while (index > 0) {
+        ++itPoints;
+        if (itPoints != points.cend()) {
+            point = *itPoints;
+        } else {
+            ++itCurves;
+            if (++itCurves == d->mCurves.cend()) {
+                return false;
+            }
+            points = (*itCurves)->getPoints();
+            itPoints = points.cbegin();
+            if (itPoints == points.cend()) {
+                return false;
+            }
+            point = *itPoints;
+        }
+    }
+
+    pnt = point->getPnt();
+    rotation = point->getRotation();
+    return true;
+}
+
+bool InteractiveCurve::getNormalOnCurve(size_t curveIndex, size_t index, gp_Pnt &pnt, gp_Quaternion &rotation) const
+{
+    if (curveIndex < d->mCurves.size()) {
+        auto it = d->mCurves.cbegin();
+        std::advance(it, curveIndex);
+        auto points = (*it)->getPoints();
+        if (index < points.size()) {
+            auto point = points[index];
+            pnt = point->getPnt();
+            rotation = point->getRotation();
+            return true;
+        }
+        return false;
+    }
+    return false;
+}
+
+bool InteractiveCurve::getMinMaxUParameter(size_t curveIndex, Standard_Real &first, Standard_Real &last) const
+{
+    if (curveIndex < d->mCurves.size()) {
+        auto it = d->mCurves.cbegin();
+        auto firstPnt = d->mFirstPoint;
+        if (curveIndex > 0) {
+            std::advance(it, curveIndex - 1);
+            firstPnt = (*it)->getPoints().back();
+            ++it;
+        }
+        auto curve = (*it)->getCurve(d->mFace, firstPnt);
+        first = curve.FirstParameter();
+        last = curve.LastParameter();
+        return true;
+    }
+    return false;
+}
+
+bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pnt &point) const
+{
+    if (curveIndex < d->mCurves.size()) {
+        auto it = d->mCurves.cbegin();
+        auto firstPnt = d->mFirstPoint;
+        if (curveIndex > 0) {
+            std::advance(it, curveIndex - 1);
+            firstPnt = (*it)->getPoints().back();
+            ++it;
+        }
+        auto curve = (*it)->getCurve(d->mFace, firstPnt);
+        if (curve.FirstParameter() <= U && U <= curve.LastParameter()) {
+            point = curve.Value(U);
+            return true;
+        }
+        return false;
+    }
+    return false;
 }
 
 bool InteractiveCurve::isCurvePicked(const opencascade::handle<SelectMgr_EntityOwner> &entity, size_t &index) const
@@ -378,26 +549,142 @@ bool InteractiveCurve::isPointPicked(const Handle(SelectMgr_EntityOwner) &entity
     return false;
 }
 
-void InteractiveCurve::addPoint(size_t curveIndex, const gp_Pnt &pnt)
+void InteractiveCurve::addCurve(size_t curveIndex, const gp_Pnt &pnt)
 {
-    d->addPoint(curveIndex, pnt);
-    GetContext()->Redisplay(this, Standard_True);
+    d->addCurve(curveIndex, pnt);
+    d->updatePointsLabel();
+    if (GetContext()) {
+        GetContext()->Redisplay(this, Standard_True);
+    }
+    d->notify();
 }
 
-void InteractiveCurve::removePoint(size_t curveIndex)
+void InteractiveCurve::removeCurve(size_t curveIndex)
 {
-    if (d->mCurves.size() < 2) {
+    if (curvesCount() == 1) {
         return;
     }
 
-    d->removePoint(curveIndex);
-    GetContext()->Redisplay(this, Standard_True);
+    d->removeCurve(curveIndex);
+    d->updatePointsLabel();
+    if (GetContext()) {
+        GetContext()->Redisplay(this, Standard_True);
+    }
+    d->notify();
 }
 
 void InteractiveCurve::addArcOfCircle(size_t curveIndex, const gp_Pnt &pnt)
 {
     d->addArcOfCircle(curveIndex, pnt);
-    GetContext()->Redisplay(this, Standard_True);
+    d->updatePointsLabel();
+    if (GetContext()) {
+        GetContext()->Redisplay(this, Standard_True);
+    }
+    d->notify();
+}
+
+QJsonObject InteractiveCurve::toJson() const
+{
+    QJsonArray arr;
+    for (const auto &curve : d->mCurves) {
+        QJsonObject obj;
+        obj["type"] = curve->type();
+        switch (curve->type()) {
+            case InteractiveCurvePrivate::Curve::CT_Line: {
+                auto line = std::static_pointer_cast <InteractiveCurvePrivate::Line> (curve);
+                obj["lastPnt"] = InteractiveFaceNormalSerializer::serialize(line->mLastPoint);
+                break;
+            }
+            case InteractiveCurvePrivate::Curve::CT_ArcOfCircle: {
+                auto arcOfCircle = std::static_pointer_cast <InteractiveCurvePrivate::ArcOfCircle> (curve);
+                obj["midlePnt"] = InteractiveFaceNormalSerializer::serialize(arcOfCircle->mMidlePoint);
+                obj["lastPnt"] = InteractiveFaceNormalSerializer::serialize(arcOfCircle->mLastPoint);
+                break;
+            }
+            default:
+                return QJsonObject();
+        }
+        arr.append(obj);
+    }
+
+    QJsonObject obj;
+    obj["fPnt"] = InteractiveFaceNormalSerializer::serialize(d->mFirstPoint);
+    obj["curves"] = arr;
+    return obj;
+}
+
+Handle(InteractiveCurve) InteractiveCurve::fromJson(const QJsonObject &obj)
+{
+    Handle(InteractiveCurve) res = new InteractiveCurve();
+    res->d->mFirstPoint = Point::createPoint(res, obj["fPnt"].toObject());
+    if (!res->d->mFirstPoint) {
+        return nullptr;
+    }
+
+    res->d->mFace = res->d->mFirstPoint->face();
+    auto array = obj["curves"].toArray();
+    for (const auto &value : qAsConst(array)) {
+        QJsonObject curveObj = value.toObject();
+        auto type = static_cast <InteractiveCurvePrivate::Curve::CurveTypes> (curveObj["type"].toInt());
+        std::shared_ptr <InteractiveCurvePrivate::Curve> curve;
+        switch (type) {
+            case InteractiveCurvePrivate::Curve::CT_Line: {
+                auto lastPnt = Point::createPoint(res, curveObj["lastPnt"].toObject());
+                if (lastPnt) {
+                    curve = std::make_shared <InteractiveCurvePrivate::Line>
+                            (res->d->mCurveColor, res->d->mCurveWidth, lastPnt);
+                }
+                break;
+            }
+            case InteractiveCurvePrivate::Curve::CT_ArcOfCircle: {
+                auto midlePnt = Point::createPoint(res, curveObj["midlePnt"].toObject());
+                auto lastPnt = Point::createPoint(res, curveObj["lastPnt"].toObject());
+                if (midlePnt && lastPnt) {
+                    curve = std::make_shared <InteractiveCurvePrivate::ArcOfCircle>
+                            (res->d->mCurveColor, res->d->mCurveWidth, midlePnt, lastPnt);
+                }
+                break;
+            }
+            default:
+                break;
+        }
+        if (!curve) {
+            return nullptr;
+        }
+        res->d->mCurves.push_back(curve);
+    }
+
+    if (res->d->mCurves.empty()) {
+        return nullptr;
+    }
+
+    return res;
+}
+
+void InteractiveCurve::addObserver(Observer *observer)
+{
+    d->mObservers.push_back(observer);
+}
+
+void InteractiveCurve::removeObserver(Observer *observer)
+{
+    std::remove(d->mObservers.begin(), d->mObservers.end(), observer);
+}
+
+void InteractiveCurve::notify()
+{
+    d->notify();
+}
+
+InteractiveCurve::InteractiveCurve()
+    : AIS_InteractiveObject()
+    , d(new InteractiveCurvePrivate)
+{
+    SetInfiniteState(Standard_False);
+    SetMutable(Standard_True);
+    SetAutoHilight(Standard_False);
+
+    d->q = this;
 }
 
 void InteractiveCurve::ComputeSelection(const Handle(SelectMgr_Selection) &selection,

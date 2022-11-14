@@ -5,10 +5,19 @@
 
 class InteractiveCurvePrivate;
 class TopoDS_Face;
+class QJsonObject;
 
 class InteractiveCurve : public AIS_InteractiveObject
 {
     DEFINE_STANDARD_RTTIEXT(InteractiveCurve, AIS_InteractiveObject)
+public:
+    class Observer
+    {
+    public:
+        virtual ~Observer() = default;
+        virtual void handleChanged() = 0;
+    };
+
 public:
     InteractiveCurve(const TopoDS_Face &face, const gp_Pnt &startOnFace, const gp_Pnt &endOnFace);
     ~InteractiveCurve();
@@ -25,21 +34,39 @@ public:
                                const Handle(Prs3d_Drawer) &theStyle,
                                const Handle(SelectMgr_EntityOwner) &theOwner) Standard_OVERRIDE;
 
-    size_t curveCount() const;
+    TopoDS_Face face() const;
+
+    size_t curvesCount() const;
+    size_t normalsCount() const;
+    size_t curveNormalsCount(size_t curveIndex) const;
+    bool getNormal(size_t index, gp_Pnt &pnt, gp_Quaternion &rotation) const;
+    bool getNormalOnCurve(size_t curveIndex, size_t index, gp_Pnt &pnt, gp_Quaternion &rotation) const;
+    bool getMinMaxUParameter(size_t curveIndex, Standard_Real &first, Standard_Real &last) const;
+    bool getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pnt &point) const;
 
     bool isCurvePicked(const Handle(SelectMgr_EntityOwner) &entity, size_t &index) const;
     bool isPointPicked(const Handle(SelectMgr_EntityOwner) &entity,
                        size_t &curveIndex, size_t &pointIndex) const;
 
-    void addPoint(size_t curveIndex, const gp_Pnt &pnt);
-    void removePoint(size_t curveIndex);
+    void addCurve(size_t curveIndex, const gp_Pnt &pnt);
+    void removeCurve(size_t curveIndex);
 
     void addArcOfCircle(size_t curveIndex, const gp_Pnt &pnt);
+    void addArcOfEllipse(size_t curveIndex, const gp_Pnt &pnt);
+
+    QJsonObject toJson() const;
+    static Handle(InteractiveCurve) fromJson(const QJsonObject &obj);
+
+    void addObserver(Observer *observer);
+    void removeObserver(Observer *observer);
+    void notify();
 
 protected:
     void Compute(const Handle(PrsMgr_PresentationManager) &,
                  const Handle(Prs3d_Presentation) &presentation,
                  const Standard_Integer theMode) Standard_OVERRIDE;
+
+    InteractiveCurve();
 
 private:
     InteractiveCurvePrivate *const d;

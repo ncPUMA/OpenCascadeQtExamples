@@ -4,6 +4,9 @@
 
 #include <cassert>
 #include <map>
+#include <sstream>
+
+#include <QJsonObject>
 
 #include <Adaptor2d_HLine2d.hxx>
 #include <Adaptor3d_CurveOnSurface.hxx>
@@ -12,6 +15,7 @@
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepAdaptor_HSurface.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRep_Builder.hxx>
 #include <BRepTools.hxx>
 #include <BRep_Tool.hxx>
 #include <Extrema_ExtCC.hxx>
@@ -134,12 +138,25 @@ class InteractiveFaceNormalPrivate
         SelectionOpositeRing,
     };
 
+    InteractiveFaceNormalPrivate(InteractiveFaceNormal *q_ptr, const TopoDS_Face &face, const gp_Pnt2d &uv, const gp_Quaternion &rotation) {
+        q = q_ptr;
+        mFace = face;
+        mUV = uv;
+        mRotation.SetRotation(rotation);
+        init();
+    }
+
     InteractiveFaceNormalPrivate(InteractiveFaceNormal *q_ptr, const TopoDS_Face &face, const gp_Pnt &pnt) {
         q = q_ptr;
         mFace = face;
         auto aSurf = BRep_Tool::Surface(mFace);
         Handle(ShapeAnalysis_Surface) surfAnalis = new ShapeAnalysis_Surface(aSurf);
         mUV = surfAnalis->ValueOfUV(pnt, Precision::Confusion());
+        init();
+    }
+
+    void init()
+    {
         q->SetInfiniteState(Standard_False);
         q->SetMutable(Standard_True);
         q->SetAutoHilight(Standard_False);
@@ -707,6 +724,13 @@ InteractiveFaceNormal::InteractiveFaceNormal(const TopoDS_Face &face, const gp_P
 
 }
 
+InteractiveFaceNormal::InteractiveFaceNormal(const TopoDS_Face &face, const gp_Pnt2d &uv, const gp_Quaternion &rotation)
+    : AIS_InteractiveObject()
+    , d(new InteractiveFaceNormalPrivate(this, face, uv, rotation))
+{
+
+}
+
 InteractiveFaceNormal::~InteractiveFaceNormal()
 {
     delete d;
@@ -717,9 +741,31 @@ void InteractiveFaceNormal::setLabel(const TCollection_AsciiString &txt)
     d->mLabel = txt;
 }
 
+TCollection_AsciiString InteractiveFaceNormal::getLabel() const
+{
+    return d->mLabel;
+}
+
+TopoDS_Face InteractiveFaceNormal::face() const
+{
+    return d->mFace;
+}
+
 gp_Pnt2d InteractiveFaceNormal::get2dPnt() const
 {
     return d->mUV;
+}
+
+gp_Pnt InteractiveFaceNormal::getPnt() const
+{
+    auto aSurf = BRep_Tool::Surface(d->mFace);
+    Handle(ShapeAnalysis_Surface) surfAnalis = new ShapeAnalysis_Surface(aSurf);
+    return surfAnalis->Value(d->mUV);
+}
+
+gp_Quaternion InteractiveFaceNormal::getRotation() const
+{
+    return d->mRotation.GetRotation();
 }
 
 bool InteractiveFaceNormal::isPicked(const Handle(SelectMgr_EntityOwner) &entity) const

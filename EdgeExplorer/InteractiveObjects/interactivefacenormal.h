@@ -15,13 +15,19 @@ public:
     //! @param face - face
     //! @param pntOnFace - point on face
     InteractiveFaceNormal(const TopoDS_Face &face, const gp_Pnt &pntOnFace);
+    InteractiveFaceNormal(const TopoDS_Face &face, const gp_Pnt2d &uv, const gp_Quaternion &rotation);
     ~InteractiveFaceNormal();
 
     //! add text label to corner point
     void setLabel(const TCollection_AsciiString &txt);
+    TCollection_AsciiString getLabel() const;
+
+    TopoDS_Face face() const;
 
     gp_Pnt2d get2dPnt() const;
+    gp_Pnt getPnt() const;
     bool isPicked(const Handle(SelectMgr_EntityOwner) &entity) const;
+    gp_Quaternion getRotation() const;
 
 protected:
     void HilightSelected(const Handle(PrsMgr_PresentationManager) &thePM,

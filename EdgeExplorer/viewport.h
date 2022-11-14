@@ -14,6 +14,8 @@ public:
 
     void fitInView();
 
+    void debugCurve() const;
+
 public Q_SLOTS:
     void slNormalV1Test();
 
