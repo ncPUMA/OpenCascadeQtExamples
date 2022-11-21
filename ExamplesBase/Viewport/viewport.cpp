@@ -14,10 +14,10 @@
 #include <V3d_View.hxx>
 #include <V3d_Viewer.hxx>
 
+#include "aspectwindow.h"
+
 #include "../ExamplesBase/ModelLoader/abstractmodelloader.h"
 #include "../ExamplesBase/ModelLoader/modelloaderfactorymethod.h"
-
-#include "aspectwindow.h"
 
 namespace ExamplesBase {
 

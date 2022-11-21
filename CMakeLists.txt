@@ -25,5 +25,6 @@ include_directories(${OpenCASCADE_INCLUDE_DIR})
 
 add_subdirectory(ExamplesBase)
 add_subdirectory(EdgeExplorer)
+add_subdirectory(PrimitiveShapes)
 
 file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Models")
