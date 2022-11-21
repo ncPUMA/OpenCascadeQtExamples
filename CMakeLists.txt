@@ -23,4 +23,7 @@ find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED Core Widgets)
 find_package(OpenCASCADE REQUIRED PATHS ${OpenCASCADE_DIR} NO_DEFAULT_PATH)
 include_directories(${OpenCASCADE_INCLUDE_DIR})
 
+add_subdirectory(ExamplesBase)
 add_subdirectory(EdgeExplorer)
+
+file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Models")

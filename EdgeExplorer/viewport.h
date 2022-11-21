@@ -1,18 +1,16 @@
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
-#include <QWidget>
+#include <ExamplesBase/Viewport/viewport.h>
 
-class ViewPortPrivate;
+class ViewportPrivate;
 
-class ViewPort : public QWidget
+class Viewport : public ExamplesBase::Viewport
 {
     Q_OBJECT
 public:
-    explicit ViewPort(QWidget *parent = nullptr);
-    ~ViewPort();
-
-    void fitInView();
+    Viewport(QWidget *parent);
+    ~Viewport();
 
     void debugCurve() const;
 
@@ -20,18 +18,13 @@ public Q_SLOTS:
     void slNormalV1Test();
 
 protected:
-    QPaintEngine* paintEngine() const final;
-    void paintEvent(QPaintEvent *) final;
-    void resizeEvent(QResizeEvent*) final;
-
-    void mousePressEvent(QMouseEvent *event) final;
-    void mouseReleaseEvent(QMouseEvent *event) final;
-    void mouseMoveEvent(QMouseEvent *event) final;
-    void wheelEvent(QWheelEvent *event) final;
+    bool selectionChanged() final;
+    bool mousePressed(QMouseEvent *event) final;
+    bool mouseReleased(QMouseEvent *event) final;
+    bool mouseMoved(QMouseEvent *event) final;
 
 private:
-    ViewPortPrivate *const d_ptr;
-
+    ViewportPrivate *const d_ptr;
 };
 
 #endif // VIEWPORT_H
