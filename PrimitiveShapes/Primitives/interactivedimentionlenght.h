@@ -7,6 +7,7 @@ class InteractiveDimentionLenght : public PrsDim_LengthDimension
 {
     DEFINE_STANDARD_RTTIEXT(InteractiveDimentionLenght, PrsDim_LengthDimension)
 public:
+    InteractiveDimentionLenght(const gp_Pnt &p1, const gp_Pnt &p2, const gp_Pln &plane);
     InteractiveDimentionLenght(const TopoDS_Face &face, const TopoDS_Edge &edge);
     InteractiveDimentionLenght(const TopoDS_Face &face1, const TopoDS_Face &face2);
 

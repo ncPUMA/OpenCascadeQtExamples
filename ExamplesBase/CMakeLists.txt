@@ -38,6 +38,9 @@ add_library(ExamplesBase SHARED
   ModelLoader/stlloader.cpp
   ModelLoader/stlloader.h
 
+  utility.cpp
+  utility.h
+
   Viewport/aspectwindow.cpp
   Viewport/aspectwindow.h
   Viewport/viewport.cpp

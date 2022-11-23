@@ -13,6 +13,7 @@
 #include <gp_Trsf.hxx>
 
 #include "Primitives/interactiveprimitivebox.h"
+#include "Primitives/interactiveprimitivecylinder.h"
 #include "Primitives/interactiveprimitiveserializer.h"
 
 class ViewportPrivate
@@ -108,6 +109,9 @@ bool Viewport::mouseReleased(QMouseEvent *event)
         if (ctx->MainSelector()->NbPicked() == 0) {
             menu.addAction(tr("Make Box"), this, [this](){
                 d_ptr->addPrimitive(new InteractivePrimitiveBox);
+            });
+            menu.addAction(tr("Make Cylinder"), this, [this](){
+                d_ptr->addPrimitive(new InteractivePrimitiveCylinder);
             });
             if (!d_ptr->mLastSerialized.empty()) {
                 menu.addSeparator();

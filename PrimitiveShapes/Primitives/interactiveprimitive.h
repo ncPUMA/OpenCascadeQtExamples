@@ -21,16 +21,24 @@ public:
     ~InteractivePrimitive();
 
     void setManipulatorVisible(Standard_Boolean visible);
-    virtual void setAdvancedManipulatorsVisible(Standard_Boolean visible);
+    void setAdvancedManipulatorsVisible(Standard_Boolean visible);
     virtual void handleDimentionLenght(InteractiveDimentionLenght *dimension, Standard_Real value);
 
     void addObserver(InteractivePrimitiveObserver *observer);
     void removeObserver(InteractivePrimitiveObserver *observer);
 
+    const Bnd_Box& BoundingBox() Standard_OVERRIDE;
+
 protected:
-    void notify();
+    void setBoundingBox(const Bnd_Box &box);
 
     void SetContext(const Handle(AIS_InteractiveContext) &context) Standard_OVERRIDE;
+    void updateGeometry();
+
+    virtual TopoDS_Shape createShape() const = 0;
+    virtual Bnd_Box createBoundingBox() const = 0;
+    virtual void updateDimensions() = 0;
+    virtual std::vector<Handle(InteractiveDimentionLenght)> dimentions() const = 0;
 
 private:
     InteractivePrimitivePrivate *d;

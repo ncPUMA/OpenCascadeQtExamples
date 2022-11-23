@@ -10,24 +10,31 @@
 
 IMPLEMENT_STANDARD_RTTIEXT(InteractiveDimentionLenght, PrsDim_LengthDimension)
 
-InteractiveDimentionLenght::InteractiveDimentionLenght(const TopoDS_Face &face, const TopoDS_Edge &edge)
-    : PrsDim_LengthDimension(face, edge)
+inline static void initAspects(InteractiveDimentionLenght *dimension)
 {
-    auto dAspect = DimensionAspect();
+    auto dAspect = dimension->DimensionAspect();
     auto lAspect = dAspect->LineAspect();
     lAspect->SetWidth(2.);
     dAspect->SetLineAspect(lAspect);
-    SetDimensionAspect(dAspect);
+    dimension->SetDimensionAspect(dAspect);
+}
+
+InteractiveDimentionLenght::InteractiveDimentionLenght(const gp_Pnt &p1, const gp_Pnt &p2, const gp_Pln &plane)
+    : PrsDim_LengthDimension(p1, p2, plane)
+{
+    initAspects(this);
+}
+
+InteractiveDimentionLenght::InteractiveDimentionLenght(const TopoDS_Face &face, const TopoDS_Edge &edge)
+    : PrsDim_LengthDimension(face, edge)
+{
+    initAspects(this);
 }
 
 InteractiveDimentionLenght::InteractiveDimentionLenght(const TopoDS_Face &face1, const TopoDS_Face &face2)
     : PrsDim_LengthDimension(face1, face2)
 {
-    auto dAspect = DimensionAspect();
-    auto lAspect = dAspect->LineAspect();
-    lAspect->SetWidth(2.);
-    dAspect->SetLineAspect(lAspect);
-    SetDimensionAspect(dAspect);
+    initAspects(this);
 }
 
 Standard_Boolean InteractiveDimentionLenght::ProcessDragging(const Handle(AIS_InteractiveContext) &context,

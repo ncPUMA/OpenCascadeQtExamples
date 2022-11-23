@@ -17,10 +17,12 @@ set(PROJECT_SOURCES
     Primitives/interactiveprimitive.cpp
     Primitives/interactiveprimitivebox.h
     Primitives/interactiveprimitivebox.cpp
-    Primitives/interactivedimentionlenght.h
-    Primitives/interactivedimentionlenght.cpp
+    Primitives/interactiveprimitivecylinder.h
+    Primitives/interactiveprimitivecylinder.cpp
     Primitives/interactiveprimitiveserializer.h
     Primitives/interactiveprimitiveserializer.cpp
+    Primitives/interactivedimentionlenght.h
+    Primitives/interactivedimentionlenght.cpp
 
     viewport.cpp
 )

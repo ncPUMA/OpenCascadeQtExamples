@@ -20,11 +20,13 @@ public:
     void setHeight(Standard_Real height);
     void setDepth(Standard_Real depth);
 
-    void setAdvancedManipulatorsVisible(Standard_Boolean visible) Standard_OVERRIDE;
-
     void handleDimentionLenght(InteractiveDimentionLenght *dimension, Standard_Real value) Standard_OVERRIDE;
 
-    const Bnd_Box& BoundingBox() Standard_OVERRIDE;
+protected:
+    TopoDS_Shape createShape() const Standard_OVERRIDE;
+    Bnd_Box createBoundingBox() const Standard_OVERRIDE;
+    void updateDimensions() Standard_OVERRIDE;
+    std::vector<Handle(InteractiveDimentionLenght)> dimentions() const Standard_OVERRIDE;
 
 private:
     InteractivePrimitiveBoxPrivate *d;

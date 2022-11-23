@@ -5,6 +5,8 @@
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_Manipulator.hxx>
 
+#include "Primitives/interactivedimentionlenght.h"
+
 class InteractivePrimitivePrivate
 {
     friend class InteractivePrimitive;
@@ -17,6 +19,7 @@ class InteractivePrimitivePrivate
         mManip->SetModeActivationOnDetection(Standard_True);
     }
 
+    Bnd_Box mBox;
     Handle(AIS_Manipulator) mManip;
     std::vector <InteractivePrimitiveObserver *> mObservers;
 };
@@ -67,9 +70,33 @@ void InteractivePrimitive::setManipulatorVisible(Standard_Boolean visible)
     }
 }
 
-void InteractivePrimitive::setAdvancedManipulatorsVisible(Standard_Boolean)
+void InteractivePrimitive::setAdvancedManipulatorsVisible(Standard_Boolean visible)
 {
+    auto ctx = GetContext();
+    if (!ctx) {
+        return;
+    }
 
+    if (visible) {
+        for (const auto &dimension : dimentions()) {
+            if (!ctx->IsDisplayed(dimension)) {
+                dimension->SetZLayer(ZLayer());
+                AddChild(dimension);
+                ctx->Display(dimension, Standard_False);
+                ctx->SetSelectionSensitivity(dimension, PrsDim_DimensionSelectionMode_All, 10);
+            }
+        }
+        return;
+    }
+
+    if (!visible) {
+        for (const auto &dimension : dimentions()) {
+            if (ctx->IsDisplayed(dimension)) {
+                ctx->Remove(dimension, Standard_False);
+                RemoveChild(dimension);
+            }
+        }
+    }
 }
 
 void InteractivePrimitive::handleDimentionLenght(InteractiveDimentionLenght *, Standard_Real)
@@ -87,14 +114,34 @@ void InteractivePrimitive::removeObserver(InteractivePrimitiveObserver *observer
     d->mObservers.erase(std::remove(d->mObservers.begin(), d->mObservers.end(), observer), d->mObservers.end());
 }
 
-void InteractivePrimitive::notify()
+const Bnd_Box &InteractivePrimitive::BoundingBox()
 {
+    return d->mBox;
+}
+
+void InteractivePrimitive::updateGeometry()
+{
+    AIS_Shape::SetShape(createShape());
+    d->mBox = createBoundingBox();
+    updateDimensions();
+    auto ctx = GetContext();
+    if (ctx) {
+        ctx->Redisplay(this, Standard_False);
+        for (const auto &dimension : dimentions()) {
+            ctx->RecomputePrsOnly(dimension, Standard_False);
+        }
+    }
+
     for (auto &o : d->mObservers) {
         o->primitiveChanged();
     }
 }
 
 void InteractivePrimitive::SetContext(const Handle(AIS_InteractiveContext) &context) {
+    if (context) {
+        updateGeometry();
+    }
+
     auto ctx = GetContext();
     if (!context && ctx && d->mManip && ctx->IsDisplayed(d->mManip)) {
         d->mManip->Detach();
