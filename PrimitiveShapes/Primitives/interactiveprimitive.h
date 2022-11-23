@@ -22,7 +22,6 @@ public:
 
     void setManipulatorVisible(Standard_Boolean visible);
     virtual void setAdvancedManipulatorsVisible(Standard_Boolean visible);
-
     virtual void handleDimentionLenght(InteractiveDimentionLenght *dimension, Standard_Real value);
 
     void addObserver(InteractivePrimitiveObserver *observer);
@@ -36,6 +35,11 @@ protected:
 private:
     InteractivePrimitivePrivate *d;
     friend class InteractivePrimitivePrivate;
+
+private:
+    InteractivePrimitive(const InteractivePrimitive &) = delete;
+    InteractivePrimitive& operator=(InteractivePrimitive &) = delete;
+    void SetShape(const TopoDS_Shape) = delete;
 };
 
 namespace opencascade {

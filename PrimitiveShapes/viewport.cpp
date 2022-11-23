@@ -13,16 +13,17 @@
 #include <gp_Trsf.hxx>
 
 #include "Primitives/interactiveprimitivebox.h"
+#include "Primitives/interactiveprimitiveserializer.h"
 
 class ViewportPrivate
 {
     friend class Viewport;
 
-    void addPrimitive(const Handle(InteractivePrimitive) &prim) {
-        prim->SetZLayer(q_ptr->depthOffLayer());
-        mModel->AddChild(prim);
-        mPrimitives << prim;
-        q_ptr->context()->Display(prim, Standard_False);
+    void addPrimitive(const Handle(InteractivePrimitive) &primitive) {
+        primitive->SetZLayer(q_ptr->depthOffLayer());
+        mModel->AddChild(primitive);
+        mPrimitives << primitive;
+        q_ptr->context()->Display(primitive, Standard_False);
     }
 
     void removePrimitive(const Handle(InteractivePrimitive) &primitive) {
@@ -37,6 +38,7 @@ class ViewportPrivate
     Handle(AIS_Shape) mModel;
 
     QVector <Handle(InteractivePrimitive)> mPrimitives;
+    std::string mLastSerialized;
 };
 
 Viewport::Viewport(QWidget *parent)
@@ -107,6 +109,22 @@ bool Viewport::mouseReleased(QMouseEvent *event)
             menu.addAction(tr("Make Box"), this, [this](){
                 d_ptr->addPrimitive(new InteractivePrimitiveBox);
             });
+            if (!d_ptr->mLastSerialized.empty()) {
+                menu.addSeparator();
+                menu.addAction(tr("Load last saved"), this, [this](){
+                    auto primitive = InteractivePrimitiveSerializer::deserialize(d_ptr->mLastSerialized);
+                    if (!primitive) {
+                        qDebug() << tr("Deserialize error");
+                        return;
+                    }
+
+                    primitive->SetZLayer(depthOffLayer());
+                    d_ptr->mModel->AddChild(primitive);
+                    d_ptr->mPrimitives << primitive;
+                    context()->Display(primitive, Standard_False);
+                    d_ptr->mLastSerialized.clear();
+                });
+            }
         } else {
             ctx->InitDetected();
             QSet <Handle(InteractivePrimitive)> detected;
@@ -114,6 +132,10 @@ bool Viewport::mouseReleased(QMouseEvent *event)
                 auto primitive = Handle(InteractivePrimitive)::DownCast(ctx->DetectedInteractive());
                 if (primitive && !detected.contains(primitive)) {
                     detected << primitive;
+                    menu.addAction(tr("Save"), this, [this, primitive](){
+                        d_ptr->mLastSerialized = InteractivePrimitiveSerializer::serialize(primitive);
+                    });
+                    menu.addSeparator();
                     menu.addAction(tr("Remove"), this, [this, primitive](){
                         d_ptr->removePrimitive(primitive);
                     });

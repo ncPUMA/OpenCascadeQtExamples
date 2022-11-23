@@ -45,7 +45,7 @@ class InteractivePrimitiveBoxPrivate
     }
 
     void updateGeometry() {
-        q->SetShape(makeShape());
+        q->AIS_Shape::SetShape(makeShape());
 
         auto faceX0 = findFaceByPoint(gp_Pnt(0., mHeight / 2., mDepth / 2.));
         auto faceX1 = findFaceByPoint(gp_Pnt(mWidth, mHeight / 2., mDepth / 2.));
@@ -105,7 +105,7 @@ InteractivePrimitiveBox::InteractivePrimitiveBox()
 {
     d->q = this;
 
-    SetShape(d->makeShape());
+    AIS_Shape::SetShape(d->makeShape());
 
     d->mBox = d->boundingBox();
 

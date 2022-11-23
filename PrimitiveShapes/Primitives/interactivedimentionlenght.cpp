@@ -8,8 +8,6 @@
 
 #include "interactiveprimitive.h"
 
-#include <QDebug>
-
 IMPLEMENT_STANDARD_RTTIEXT(InteractiveDimentionLenght, PrsDim_LengthDimension)
 
 InteractiveDimentionLenght::InteractiveDimentionLenght(const TopoDS_Face &face, const TopoDS_Edge &edge)

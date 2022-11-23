@@ -4,20 +4,25 @@ project(PrimitiveShapes VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+set(PROJECT_H
+
+    )
+
 set(PROJECT_SOURCES
     main.cpp
-    mainwindow.cpp
     mainwindow.h
+    mainwindow.cpp
 
-    Primitives/interactiveprimitive.cpp
     Primitives/interactiveprimitive.h
-    Primitives/interactiveprimitivebox.cpp
+    Primitives/interactiveprimitive.cpp
     Primitives/interactiveprimitivebox.h
-    Primitives/interactivedimentionlenght.cpp
+    Primitives/interactiveprimitivebox.cpp
     Primitives/interactivedimentionlenght.h
+    Primitives/interactivedimentionlenght.cpp
+    Primitives/interactiveprimitiveserializer.h
+    Primitives/interactiveprimitiveserializer.cpp
 
     viewport.cpp
-    viewport.h
 )
 
 add_executable(PrimitiveShapes
