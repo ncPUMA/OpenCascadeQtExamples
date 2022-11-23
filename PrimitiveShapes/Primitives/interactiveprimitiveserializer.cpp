@@ -6,6 +6,7 @@
 #include <gp_Quaternion.hxx>
 
 #include "Primitives/interactiveprimitivebox.h"
+#include "Primitives/interactiveprimitivecone.h"
 #include "Primitives/interactiveprimitivecylinder.h"
 
 template <typename T>
@@ -56,13 +57,37 @@ inline Handle(InteractivePrimitive) deserialize<InteractivePrimitiveCylinder>(co
     return ret;
 }
 
+// InteractivePrimitiveCone
+template <>
+inline QJsonObject serialize<InteractivePrimitiveCone>(const Handle(InteractivePrimitive) &primitive)
+{
+    QJsonObject ret;
+    auto box = Handle(InteractivePrimitiveCone)::DownCast(primitive);
+    ret["RadiusNear"] = box->getRadiusNear();
+    ret["RadiusFar"] = box->getRadiusFar();
+    ret["Height"] = box->getHeight();
+    return ret;
+}
+
+template <>
+inline Handle(InteractivePrimitive) deserialize<InteractivePrimitiveCone>(const QJsonObject &obj)
+{
+    Handle(InteractivePrimitiveCone) ret = new InteractivePrimitiveCone();
+    ret->setRadiusNear(obj["RadiusNear"].toDouble());
+    ret->setRadiusFar(obj["RadiusFar"].toDouble());
+    ret->setHeight(obj["Height"].toDouble());
+    return ret;
+}
+
 std::map<QString, std::function<QJsonObject(const Handle(InteractivePrimitive) &primitive)>> sSerializers = {
     { QStringLiteral("InteractivePrimitiveBox"), serialize<InteractivePrimitiveBox> },
+    { QStringLiteral("InteractivePrimitiveCone"), serialize<InteractivePrimitiveCone> },
     { QStringLiteral("InteractivePrimitiveCylinder"), serialize<InteractivePrimitiveCylinder> },
 };
 
 std::map<QString, std::function<Handle(InteractivePrimitive)(const QJsonObject &obj)>> sDeserializers = {
     { QStringLiteral("InteractivePrimitiveBox"), deserialize<InteractivePrimitiveBox> },
+    { QStringLiteral("InteractivePrimitiveCone"), deserialize<InteractivePrimitiveCone> },
     { QStringLiteral("InteractivePrimitiveCylinder"), deserialize<InteractivePrimitiveCylinder> },
 };
 

@@ -410,7 +410,9 @@ void InteractiveCurve::HilightSelected(const Handle(PrsMgr_PresentationManager) 
 void InteractiveCurve::ClearSelected()
 {
     d->clearSelected();
-    GetContext()->RecomputePrsOnly(this, Standard_True);
+    if (GetContext()) {
+        GetContext()->RecomputePrsOnly(this, Standard_True);
+    }
 }
 
 TopoDS_Face InteractiveCurve::face() const

@@ -28,6 +28,7 @@
 #include <ExamplesBase/utility.h>
 
 #include "Primitives/interactiveprimitivebox.h"
+#include "Primitives/interactiveprimitivecone.h"
 #include "Primitives/interactiveprimitivecylinder.h"
 #include "Primitives/interactiveprimitiveserializer.h"
 
@@ -169,6 +170,9 @@ bool Viewport::mouseReleased(QMouseEvent *event)
         if (ctx->MainSelector()->NbPicked() == 0) {
             menu.addAction(tr("Make Box"), this, [this](){
                 d_ptr->addPrimitive(new InteractivePrimitiveBox);
+            });
+            menu.addAction(tr("Make Cone"), this, [this](){
+                d_ptr->addPrimitive(new InteractivePrimitiveCone);
             });
             menu.addAction(tr("Make Cylinder"), this, [this](){
                 d_ptr->addPrimitive(new InteractivePrimitiveCylinder);

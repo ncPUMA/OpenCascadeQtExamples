@@ -338,7 +338,7 @@ class InteractiveFaceNormalPrivate
                 Standard_Real u1, u2, v1, v2;
                 surf->Bounds(u1, u2, v1, v2);
                 Standard_Real lenK = 1.;
-                if (surf->IsUClosed()) {
+                if (surf->IsUClosed() && surf->IsVClosed()) {
                     lenK /= surf->Value(u1, v1).Distance(surf->Value(u1 + 1, v1));
                 }
                 Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X() + mLen * lenK, mUV.Y()));
@@ -366,7 +366,7 @@ class InteractiveFaceNormalPrivate
                 Standard_Real u1, u2, v1, v2;
                 surf->Bounds(u1, u2, v1, v2);
                 Standard_Real lenK = 1.;
-                if (surf->IsVClosed()) {
+                if (surf->IsUClosed() && surf->IsVClosed()) {
                     lenK /= surf->Value(u1, v1).Distance(surf->Value(u1, v1 + 1.));
                 }
                 Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), mUV.Y() + mLen * lenK));
@@ -464,7 +464,7 @@ class InteractiveFaceNormalPrivate
         Standard_Real u1, u2, v1, v2;
         surf->Bounds(u1, u2, v1, v2);
         Standard_Real lenK = 1.;
-        if (surf->IsUClosed()) {
+        if (surf->IsUClosed() && surf->IsVClosed()) {
             lenK /= surf->Value(u1, v1).Distance(surf->Value(u1 + 1, v1));
         }
         Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X() + mLen * lenK, mUV.Y()));
@@ -486,7 +486,7 @@ class InteractiveFaceNormalPrivate
         Standard_Real u1, u2, v1, v2;
         surf->Bounds(u1, u2, v1, v2);
         Standard_Real lenK = 1.;
-        if (surf->IsVClosed()) {
+        if (surf->IsUClosed() && surf->IsVClosed()) {
             lenK /= surf->Value(u1, v1).Distance(surf->Value(u1, v1 + 1.));
         }
         Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), mUV.Y() + mLen * lenK));

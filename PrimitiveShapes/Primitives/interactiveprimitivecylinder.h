@@ -15,7 +15,7 @@ public:
     Standard_Real getRadius() const;
     Standard_Real getHeight() const;
 
-    void setRadius(Standard_Real width);
+    void setRadius(Standard_Real radius);
     void setHeight(Standard_Real height);
 
     void handleDimentionLenght(InteractiveDimentionLenght *dimension, Standard_Real value) Standard_OVERRIDE;

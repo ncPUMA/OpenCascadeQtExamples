@@ -17,6 +17,8 @@ set(PROJECT_SOURCES
     Primitives/interactiveprimitive.cpp
     Primitives/interactiveprimitivebox.h
     Primitives/interactiveprimitivebox.cpp
+    Primitives/interactiveprimitivecone.h
+    Primitives/interactiveprimitivecone.cpp
     Primitives/interactiveprimitivecylinder.h
     Primitives/interactiveprimitivecylinder.cpp
     Primitives/interactiveprimitiveserializer.h

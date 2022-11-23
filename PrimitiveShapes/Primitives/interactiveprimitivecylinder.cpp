@@ -22,7 +22,6 @@ class InteractivePrimitiveCylinderPrivate
     }
 
     void updateDimensions() {
-        auto shape = makeShape();
         mRadiusDimension->SetMeasuredGeometry(gp_Pnt(0., 0., 0.),
                                               gp_Pnt(mRadius, 0., 0.),
                                               gp_Pln(gp_Pnt(0., 0., 0.), gp_Dir(0., 1., 0.)));
@@ -32,7 +31,6 @@ class InteractivePrimitiveCylinderPrivate
     }
 
     void createDimensions() {
-        auto shape = makeShape();
         mRadiusDimension = new InteractiveDimentionLenght(gp_Pnt(0., 0., 0.),
                                                           gp_Pnt(mRadius, 0., 0.),
                                                           gp_Pln(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.)));
@@ -74,9 +72,9 @@ Standard_Real InteractivePrimitiveCylinder::getHeight() const
     return d->mHeight;
 }
 
-void InteractivePrimitiveCylinder::setRadius(Standard_Real width)
+void InteractivePrimitiveCylinder::setRadius(Standard_Real radius)
 {
-    d->mRadius = width < d->mMinLenght ? d->mMinLenght : width;
+    d->mRadius = radius < d->mMinLenght ? d->mMinLenght : radius;
     updateGeometry();
 }
 
