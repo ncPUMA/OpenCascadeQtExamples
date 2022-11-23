@@ -46,10 +46,6 @@ void InteractivePrimitive::setManipulatorVisible(Standard_Boolean visible)
     }
 
     if (visible && !ctx->IsDisplayed(d->mManip)) {
-        gp_Trsf combined;
-        if (CombinedParentTransformation()) {
-            combined = CombinedParentTransformation()->Trsf();
-        }
         auto ax = gp_Ax2().Transformed(Transformation());
         auto bndBox = BoundingBox().Transformed(Transformation());
         ax.SetLocation(bndBox.CornerMin().XYZ() + (bndBox.CornerMax().XYZ() - bndBox.CornerMin().XYZ()) / 2.);

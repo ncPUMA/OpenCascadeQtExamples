@@ -353,7 +353,7 @@ class ViewportPrivate
         return false;
     }
 
-    bool endCut(const Handle(AIS_InteractiveContext) &context, Standard_Integer depthOffLayer, const Graphic3d_Vec2i &pos) {
+    bool endCut(const Handle(AIS_InteractiveContext) &context, Standard_Integer depthOffLayer) {
         if (!mStartCut) {
             return false;
         }
@@ -489,10 +489,9 @@ bool Viewport::selectionChanged()
     return d_ptr->selectionChanged(context(), depthOffLayer());
 }
 
-bool Viewport::mousePressed(QMouseEvent *event)
+bool Viewport::mousePressed(QMouseEvent *)
 {
-    const Graphic3d_Vec2i aPnt(event->pos().x(), event->pos().y());
-    return d_ptr->endCut(context(), depthOffLayer(), aPnt);
+    return d_ptr->endCut(context(), depthOffLayer());
 }
 
 bool Viewport::mouseReleased(QMouseEvent *event)

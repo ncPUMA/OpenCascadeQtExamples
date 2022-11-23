@@ -13,9 +13,9 @@ public:
 
 protected:
     bool selectionChanged() final;
-//    bool mousePressed(QMouseEvent *event) final;
+    bool mousePressed(QMouseEvent *event) final;
     bool mouseReleased(QMouseEvent *event) final;
-//    bool mouseMoved(QMouseEvent *event) final;
+    bool mouseMoved(QMouseEvent *event) final;
 
 private:
     ViewportPrivate *const d_ptr;
