@@ -37,7 +37,7 @@ class InteractiveNormalPrivate
 
         //! Checks if picking ray can be used for detection.
         Standard_Boolean isValidRay (const SelectBasics_SelectingVolumeManager &volMgr) const {
-            if (volMgr.GetActiveSelectionType() != SelectBasics_SelectingVolumeManager::Point) {
+            if (volMgr.GetActiveSelectionType() != SelectMgr_SelectionType_Point) {
                 return Standard_False;
             }
             const gp_Vec ray(volMgr.GetNearPickedPnt(), volMgr.GetFarPickedPnt());
@@ -56,7 +56,7 @@ class InteractiveNormalPrivate
         SensCircle(const Handle(SelectMgr_EntityOwner) &owner,
                    const gp_Circ &circle,
                    const Standard_Integer pointCount)
-            : Select3D_SensitiveCircle(owner, circle, Standard_False, pointCount)
+            : Select3D_SensitiveCircle(owner, circle, Standard_False)
             , SensRotation(circle.Position().Direction()) { }
 
         //! Checks whether the circle overlaps current selecting volume

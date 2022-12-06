@@ -11,10 +11,10 @@
 #include <AIS_Point.hxx>
 #include <AIS_Shape.hxx>
 #include <AIS_Trihedron.hxx>
-#include <BRepAdaptor_HSurface.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRep_Tool.hxx>
-#include <Geom2dAdaptor_HCurve.hxx>
+#include <Geom2dAdaptor_Curve.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <GCE2d_MakeSegment.hxx>
@@ -318,8 +318,8 @@ bool Viewport::mouseMoved(QMouseEvent *event)
                         auto startUV = surfAnalis->ValueOfUV(startPointLocal, Precision::Confusion());
                         auto endUV = surfAnalis->ValueOfUV(endPointLocal, Precision::Confusion());
                         Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(startUV, endUV);
-                        Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve),
-                                                             new BRepAdaptor_HSurface(d_ptr->mStartCutFace));
+                        Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve),
+                                                             new BRepAdaptor_Surface(d_ptr->mStartCutFace));
                         BRepBuilderAPI_MakeEdge builder(curve, surf);
                         d_ptr->mCutLine = new AIS_Shape(builder.Edge());
                         d_ptr->mCutLine->SetZLayer(depthOffLayer());

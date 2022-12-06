@@ -9,12 +9,12 @@
 #include <Adaptor3d_CurveOnSurface.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <BRep_Tool.hxx>
-#include <BRepAdaptor_HSurface.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <GCE2d_MakeArcOfCircle.hxx>
 #include <GCE2d_MakeArcOfEllipse.hxx>
 #include <GCE2d_MakeSegment.hxx>
 #include <GeomAdaptor.hxx>
-#include <Geom2dAdaptor_HCurve.hxx>
+#include <Geom2dAdaptor_Curve.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <GeomLib.hxx>
 #include <gp_Quaternion.hxx>
@@ -176,7 +176,7 @@ class InteractiveCurvePrivate
             auto first = start->get2dPnt();
             auto last = mLastPoint->get2dPnt();
             Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(first, last);
-            return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(face));
+            return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(face));
         }
 
         Handle(Point) mLastPoint;
@@ -205,7 +205,7 @@ class InteractiveCurvePrivate
             auto midle = mMidlePoint->get2dPnt();
             auto last = mLastPoint->get2dPnt();
             Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeArcOfCircle(first, midle, last);
-            return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(face));
+            return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(face));
         }
 
         Handle(Point) mMidlePoint;

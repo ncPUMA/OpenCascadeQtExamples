@@ -15,14 +15,14 @@
 #include <AIS_Trihedron.hxx>
 #include <Adaptor3d_CurveOnSurface.hxx>
 #include <BRepAdaptor_Curve.hxx>
-#include <BRepAdaptor_HSurface.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepExtrema_ExtCC.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRep_Tool.hxx>
 #include <GCE2d_MakeSegment.hxx>
-#include <Geom2dAdaptor_HCurve.hxx>
+#include <Geom2dAdaptor_Curve.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <gp_Quaternion.hxx>
@@ -338,8 +338,8 @@ class ViewportPrivate
                     auto startUV = surfAnalis->ValueOfUV(mStartCut->Component()->Pnt(), Precision::Confusion());
                     auto endUV = surfAnalis->ValueOfUV(point, Precision::Confusion());
                     Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(startUV, endUV);
-                    Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve),
-                                                         new BRepAdaptor_HSurface(mStartCutFace));
+                    Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve),
+                                                         new BRepAdaptor_Surface(mStartCutFace));
                     BRepBuilderAPI_MakeEdge builder(curve, surf);
                     mCutLine = new AIS_Shape(builder.Edge());
                     mModel->AddChild(mCutLine);
