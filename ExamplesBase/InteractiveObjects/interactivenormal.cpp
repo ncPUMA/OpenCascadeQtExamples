@@ -116,6 +116,9 @@ class InteractiveNormalPrivate
         q->SetMutable(Standard_True);
         q->SetAutoHilight(Standard_False);
         auto textAspect = q->Attributes()->TextAspect();
+        if (!textAspect) {
+            textAspect = new Prs3d_TextAspect;
+        }
         textAspect->SetHeight(mLabelHeight);
         q->Attributes()->SetTextAspect(textAspect);
     }

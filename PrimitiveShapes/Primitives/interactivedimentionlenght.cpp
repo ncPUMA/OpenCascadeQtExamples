@@ -13,8 +13,16 @@ IMPLEMENT_STANDARD_RTTIEXT(InteractiveDimentionLenght, PrsDim_LengthDimension)
 inline static void initAspects(InteractiveDimentionLenght *dimension)
 {
     auto dAspect = dimension->DimensionAspect();
+    if (!dAspect) {
+        dAspect = new Prs3d_DimensionAspect;
+    }
+
     auto lAspect = dAspect->LineAspect();
-    lAspect->SetWidth(2.);
+    if (!lAspect) {
+        lAspect = new Prs3d_LineAspect(Quantity_NOC_GREEN, Aspect_TOL_SOLID, 2.);
+    } else {
+        lAspect->SetWidth(2.);
+    }
     dAspect->SetLineAspect(lAspect);
     dimension->SetDimensionAspect(dAspect);
 }

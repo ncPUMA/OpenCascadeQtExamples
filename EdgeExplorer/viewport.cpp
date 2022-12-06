@@ -91,8 +91,12 @@ class ViewportPrivate
         mModel->AddChild(edgeObj);
         auto drawer = edgeObj->Attributes();
         auto aspect = drawer->WireAspect();
-        aspect->SetColor(Quantity_NOC_RED);
-        aspect->SetWidth(2.);
+        if (!aspect) {
+            aspect = new Prs3d_LineAspect(Quantity_NOC_RED, Aspect_TOL_SOLID, 2.);
+        } else {
+            aspect->SetColor(Quantity_NOC_RED);
+            aspect->SetWidth(2.);
+        }
         drawer->SetWireAspect(aspect);
         context->SetLocalAttributes(edgeObj, drawer, Standard_False);
         context->Display(edgeObj, Standard_False);
