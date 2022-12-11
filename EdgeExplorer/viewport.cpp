@@ -14,7 +14,6 @@
 #include <AIS_Shape.hxx>
 #include <AIS_Trihedron.hxx>
 #include <Adaptor3d_CurveOnSurface.hxx>
-#include <BRepAdaptor_Curve.hxx>
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakeVertex.hxx>
@@ -22,16 +21,24 @@
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRep_Tool.hxx>
 #include <GCE2d_MakeSegment.hxx>
-#include <Geom2dAdaptor_Curve.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <gp_Quaternion.hxx>
 #include <ShapeAnalysis_Surface.hxx>
+#include <Standard_Version.hxx>
 #include <StdSelect_BRepOwner.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
+
+#if OCC_VERSION_HEX > 0x070500
+#include <BRepAdaptor_Surface.hxx>
+#include <Geom2dAdaptor_Curve.hxx>
+#else
+#include <BRepAdaptor_HSurface.hxx>
+#include <Geom2dAdaptor_HCurve.hxx>
+#endif
 
 #include <ExamplesBase/InteractiveObjects/interactivecurve.h>
 #include <ExamplesBase/InteractiveObjects/interactivenormal.h>
@@ -342,8 +349,13 @@ class ViewportPrivate
                     auto startUV = surfAnalis->ValueOfUV(mStartCut->Component()->Pnt(), Precision::Confusion());
                     auto endUV = surfAnalis->ValueOfUV(point, Precision::Confusion());
                     Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(startUV, endUV);
+#if OCC_VERSION_HEX > 0x070500
                     Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve),
                                                          new BRepAdaptor_Surface(mStartCutFace));
+#else
+                    Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve),
+                                                         new BRepAdaptor_HSurface(mStartCutFace));
+#endif
                     BRepBuilderAPI_MakeEdge builder(curve, surf);
                     mCutLine = new AIS_Shape(builder.Edge());
                     mModel->AddChild(mCutLine);

@@ -19,6 +19,7 @@
 #include <Prs3d_ShadingAspect.hxx>
 #include <Prs3d_Text.hxx>
 #include <Prs3d_ToolDisk.hxx>
+#include <Standard_Version.hxx>
 #include <V3d_View.hxx>
 
 namespace ExamplesBase {
@@ -37,7 +38,12 @@ class InteractiveNormalPrivate
 
         //! Checks if picking ray can be used for detection.
         Standard_Boolean isValidRay (const SelectBasics_SelectingVolumeManager &volMgr) const {
-            if (volMgr.GetActiveSelectionType() != SelectMgr_SelectionType_Point) {
+#if OCC_VERSION_HEX > 0x070500
+            auto selectionType = SelectMgr_SelectionType_Point;
+#else
+            auto selectionType = SelectBasics_SelectingVolumeManager::Point;
+#endif
+            if (volMgr.GetActiveSelectionType() != selectionType) {
                 return Standard_False;
             }
             const gp_Vec ray(volMgr.GetNearPickedPnt(), volMgr.GetFarPickedPnt());

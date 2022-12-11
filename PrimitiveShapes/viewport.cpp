@@ -11,18 +11,25 @@
 #include <AIS_Point.hxx>
 #include <AIS_Shape.hxx>
 #include <AIS_Trihedron.hxx>
-#include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRep_Tool.hxx>
-#include <Geom2dAdaptor_Curve.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <GCE2d_MakeSegment.hxx>
 #include <gp_Quaternion.hxx>
 #include <gp_Trsf.hxx>
 #include <ShapeAnalysis_Surface.hxx>
+#include <Standard_Version.hxx>
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
+
+#if OCC_VERSION_HEX > 0x070500
+#include <BRepAdaptor_Surface.hxx>
+#include <Geom2dAdaptor_Curve.hxx>
+#else
+#include <BRepAdaptor_HSurface.hxx>
+#include <Geom2dAdaptor_HCurve.hxx>
+#endif
 
 #include <ExamplesBase/InteractiveObjects/interactivecurve.h>
 #include <ExamplesBase/utility.h>
@@ -318,8 +325,13 @@ bool Viewport::mouseMoved(QMouseEvent *event)
                         auto startUV = surfAnalis->ValueOfUV(startPointLocal, Precision::Confusion());
                         auto endUV = surfAnalis->ValueOfUV(endPointLocal, Precision::Confusion());
                         Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(startUV, endUV);
+#if OCC_VERSION_HEX > 0x070500
                         Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve),
                                                              new BRepAdaptor_Surface(d_ptr->mStartCutFace));
+#else
+                        Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve),
+                                                             new BRepAdaptor_HSurface(d_ptr->mStartCutFace));
+#endif
                         BRepBuilderAPI_MakeEdge builder(curve, surf);
                         d_ptr->mCutLine = new AIS_Shape(builder.Edge());
                         d_ptr->mCutLine->SetZLayer(depthOffLayer());

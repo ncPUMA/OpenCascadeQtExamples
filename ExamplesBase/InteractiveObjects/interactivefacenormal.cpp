@@ -8,7 +8,6 @@
 
 #include <Adaptor3d_CurveOnSurface.hxx>
 #include <AIS_InteractiveContext.hxx>
-#include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRep_Builder.hxx>
 #include <BRepTools.hxx>
@@ -20,7 +19,6 @@
 #include <GC_MakeSegment.hxx>
 #include <GeomAdaptor.hxx>
 #include <GeomAdaptor_Curve.hxx>
-#include <Geom2dAdaptor_Curve.hxx>
 #include <Geom2d_Line.hxx>
 #include <GeomAPI_PointsToBSpline.hxx>
 #include <GeomAPI_IntCS.hxx>
@@ -46,11 +44,20 @@
 #include <Select3D_SensitiveTriangulation.hxx>
 #include <SelectMgr_EntityOwner.hxx>
 #include <ShapeAnalysis_Surface.hxx>
+#include <Standard_Version.hxx>
 #include <StdPrs_Curve.hxx>
 #include <StdPrs_Isolines.hxx>
 #include <StdPrs_ShadedSurface.hxx>
 #include <TopoDS_Face.hxx>
 #include <V3d_View.hxx>
+
+#if OCC_VERSION_HEX > 0x070500
+#include <BRepAdaptor_Surface.hxx>
+#include <Geom2dAdaptor_Curve.hxx>
+#else
+#include <BRepAdaptor_HSurface.hxx>
+#include <Geom2dAdaptor_HCurve.hxx>
+#endif
 
 namespace ExamplesBase {
 
@@ -68,7 +75,12 @@ class InteractiveFaceNormalPrivate
 
         //! Checks if picking ray can be used for detection.
         Standard_Boolean isValidRay (const SelectBasics_SelectingVolumeManager &volMgr) const {
-            if (volMgr.GetActiveSelectionType() != SelectMgr_SelectionType_Point) {
+#if OCC_VERSION_HEX > 0x070500
+            auto selectionType = SelectMgr_SelectionType_Point;
+#else
+            auto selectionType = SelectBasics_SelectingVolumeManager::Point;
+#endif
+            if (volMgr.GetActiveSelectionType() != selectionType) {
                 return Standard_False;
             }
             const gp_Vec ray(volMgr.GetNearPickedPnt(), volMgr.GetFarPickedPnt());
@@ -339,7 +351,11 @@ class InteractiveFaceNormalPrivate
                     lenK /= surf->Value(u1, v1).Distance(surf->Value(u1 + 1, v1));
                 }
                 Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X() + mLen * lenK, mUV.Y()));
+#if OCC_VERSION_HEX > 0x070500
                 const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
+#else
+                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
+#endif
                 Handle(Select3D_SensitiveCurve) sens =
                         new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(curveOnSurf), 50);
                 sens->SetSensitivityFactor(15);
@@ -367,7 +383,11 @@ class InteractiveFaceNormalPrivate
                     lenK /= surf->Value(u1, v1).Distance(surf->Value(u1, v1 + 1.));
                 }
                 Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), mUV.Y() + mLen * lenK));
+#if OCC_VERSION_HEX > 0x070500
                 const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
+#else
+                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
+#endif
                 Handle(Select3D_SensitiveCurve) sens =
                         new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(curveOnSurf), 50);
                 sens->SetSensitivityFactor(15);
@@ -465,7 +485,11 @@ class InteractiveFaceNormalPrivate
             lenK /= surf->Value(u1, v1).Distance(surf->Value(u1 + 1, v1));
         }
         Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X() + mLen * lenK, mUV.Y()));
+#if OCC_VERSION_HEX > 0x070500
         const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
+#else
+        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
+#endif
         StdPrs_Curve::Add(presentation, curveOnSurf, drawer);
         return aspect;
     }
@@ -487,7 +511,11 @@ class InteractiveFaceNormalPrivate
             lenK /= surf->Value(u1, v1).Distance(surf->Value(u1, v1 + 1.));
         }
         Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), mUV.Y() + mLen * lenK));
+#if OCC_VERSION_HEX > 0x070500
         const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
+#else
+        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
+#endif
         StdPrs_Curve::Add(presentation, curveOnSurf, drawer);
         return aspect;
     }
