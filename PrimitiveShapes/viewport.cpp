@@ -7,6 +7,7 @@
 
 #include <Adaptor3d_CurveOnSurface.hxx>
 #include <AIS_InteractiveContext.hxx>
+#include <AIS_Line.hxx>
 #include <AIS_Manipulator.hxx>
 #include <AIS_Point.hxx>
 #include <AIS_Shape.hxx>
@@ -59,9 +60,21 @@ class ViewportPrivate
     void removePrimitive(const Handle(InteractivePrimitive) &primitive) {
         auto it = std::find(mPrimitives.begin(), mPrimitives.end(), primitive);
         if (it != mPrimitives.cend()) {
-            q_ptr->context()->Remove(*it, Standard_False);
+            auto ctx = q_ptr->context();
+            ctx->Remove(*it, Standard_False);
             mPrimitives.erase(it);
+            removeTestPoint();
         }
+    }
+
+    void removeTestPoint() {
+        auto ctx = q_ptr->context();
+        ctx->Remove(mTestPoint, Standard_False);
+        ctx->Remove(mTestNormal, Standard_False);
+        ctx->Remove(mTestAngle, Standard_False);
+        mTestPoint = nullptr;
+        mTestNormal = nullptr;
+        mTestAngle = nullptr;
     }
 
     Viewport *q_ptr;
@@ -74,6 +87,10 @@ class ViewportPrivate
     TopoDS_Face mStartCutFace;
     Handle(AIS_Point) mStartCut, mEndCut;
     Handle(AIS_Shape) mCutLine;
+
+    Handle(AIS_Point) mTestPoint;
+    Handle(AIS_Line) mTestNormal;
+    Handle(AIS_Line) mTestAngle;
 };
 
 Viewport::Viewport(QWidget *parent)
@@ -250,9 +267,54 @@ bool Viewport::mouseReleased(QMouseEvent *event)
                         menu.addAction(tr("Create arc of circle"), this, [cutLine, curveIndex, localPnt](){
                             cutLine->addArcOfCircle(curveIndex, localPnt);
                         });
+                        menu.addSeparator();
+                        menu.addAction(tr("Create point by \"U\" value"), this, [this, cutLine, curveIndex, localPnt](){
+                            gp_Pnt projection;
+                            gp_Quaternion rotation;
+                            Standard_Real U = 0.;
+                            cutLine->getUParameter(curveIndex, localPnt, projection, U);
+                            qDebug() << "Get U" << U << "\n"
+                                     << "Local" << localPnt.X() << localPnt.Y() << localPnt.Z() << "\n"
+                                     << "Proj" << projection.X() << projection.Y() << projection.Z() << "\n";
+                            cutLine->getPointOnCurve(curveIndex, U, projection, rotation);
+
+                            auto ctx = context();
+                            auto zLayer = depthOffLayer();
+                            gp_Trsf trsf;
+                            trsf.SetRotationPart(rotation);
+
+                            d_ptr->removeTestPoint();
+                            d_ptr->mTestPoint = new AIS_Point(new Geom_CartesianPoint(projection));
+                            d_ptr->mTestPoint->SetZLayer(zLayer);
+                            cutLine->AddChild(d_ptr->mTestPoint);
+                            ctx->Display(d_ptr->mTestPoint, Standard_False);
+                            ctx->Deactivate(d_ptr->mTestPoint);
+
+                            gp_Dir normalDir(0., 0., 1.);
+                            normalDir.Transform(trsf);
+                            d_ptr->mTestNormal = new AIS_Line(new Geom_CartesianPoint(projection),
+                                                              new Geom_CartesianPoint(projection.Translated(normalDir.XYZ() * 5.)));
+                            d_ptr->mTestNormal->SetZLayer(zLayer);
+                            cutLine->AddChild(d_ptr->mTestNormal);
+                            ctx->Display(d_ptr->mTestNormal, Standard_False);
+                            ctx->Deactivate(d_ptr->mTestNormal);
+
+                            gp_Dir angleDir(1., 0., 0.);
+                            angleDir.Transform(trsf);
+                            d_ptr->mTestAngle = new AIS_Line(new Geom_CartesianPoint(projection),
+                                                             new Geom_CartesianPoint(projection.Translated(angleDir.XYZ() * 5.)));
+                            d_ptr->mTestAngle->SetColor(Quantity_NOC_BLUE);
+                            d_ptr->mTestAngle->SetZLayer(zLayer);
+                            cutLine->AddChild(d_ptr->mTestAngle);
+                            ctx->Display(d_ptr->mTestAngle, Standard_False);
+                            ctx->Deactivate(d_ptr->mTestAngle);
+                        });
                     }
                     size_t pointIndex = 0u;
                     if (cutLine->curvesCount() > 1 && cutLine->isPointPicked(entity, curveIndex, pointIndex)) {
+                        if (!menu.isEmpty()) {
+                            menu.addSeparator();
+                        }
                         menu.addAction(tr("Remove point"), this, [cutLine, curveIndex](){
                             cutLine->removeCurve(curveIndex);
                         });

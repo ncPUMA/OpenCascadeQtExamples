@@ -15,9 +15,12 @@
 #include <GeomAdaptor.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <GeomLib.hxx>
+#include <GeomLProp_SLProps.hxx>
 #include <gp_Quaternion.hxx>
 #include <Prs3d_LineAspect.hxx>
 #include <Select3D_SensitiveCurve.hxx>
+#include <ShapeAnalysis_Curve.hxx>
+#include <ShapeAnalysis_Surface.hxx>
 #include <Standard_Version.hxx>
 #include <StdPrs_Curve.hxx>
 #include <TopoDS_Face.hxx>
@@ -523,7 +526,25 @@ bool InteractiveCurve::getMinMaxUParameter(size_t curveIndex, Standard_Real &fir
     return false;
 }
 
-bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pnt &point) const
+bool ExamplesBase::InteractiveCurve::getUParameter(size_t curveIndex, const gp_Pnt &pnt, gp_Pnt &projection, Standard_Real &U) const
+{
+    if (curveIndex < d->mCurves.size()) {
+        auto it = d->mCurves.cbegin();
+        auto firstPnt = d->mFirstPoint;
+        if (curveIndex > 0) {
+            std::advance(it, curveIndex - 1);
+            firstPnt = (*it)->getPoints().back();
+            ++it;
+        }
+        auto curve = (*it)->getCurve(d->mFace, firstPnt);
+        ShapeAnalysis_Curve curveAnalis;
+        curveAnalis.Project(curve, pnt, Precision::Confusion(), projection, U);
+        return true;
+    }
+    return false;
+}
+
+bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pnt &point, gp_Quaternion &rotation) const
 {
     if (curveIndex < d->mCurves.size()) {
         auto it = d->mCurves.cbegin();
@@ -536,6 +557,19 @@ bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pn
         auto curve = (*it)->getCurve(d->mFace, firstPnt);
         if (curve.FirstParameter() <= U && U <= curve.LastParameter()) {
             point = curve.Value(U);
+            auto aSurf = BRep_Tool::Surface(d->mFace);
+            ShapeAnalysis_Surface anlisSurf(aSurf);
+            const gp_Pnt2d pUV = anlisSurf.ValueOfUV(point, Precision::Confusion());
+            GeomLProp_SLProps props(aSurf, pUV.X(), pUV.Y(), 1, 0.01);
+            gp_Dir normal = props.Normal();
+            gp_Dir angle = props.D1U();
+            if (d->mFace.Orientation() == TopAbs_REVERSED || d->mFace.Orientation() == TopAbs_INTERNAL) {
+                normal.Reverse();
+                angle.Reverse();
+            }
+            gp_Quaternion normalQuat(gp_XYZ(0., 0., 1.), normal.XYZ());
+            gp_Quaternion angleQuat(gp_XYZ(1., 0., 0.), angle.XYZ());
+            rotation = normalQuat * angleQuat;
             return true;
         }
         return false;
