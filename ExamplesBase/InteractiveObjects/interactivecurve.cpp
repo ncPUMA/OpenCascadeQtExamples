@@ -12,6 +12,7 @@
 #include <GCE2d_MakeArcOfCircle.hxx>
 #include <GCE2d_MakeArcOfEllipse.hxx>
 #include <GCE2d_MakeSegment.hxx>
+#include <GCPnts_AbscissaPoint.hxx>
 #include <GeomAdaptor.hxx>
 #include <Geom2d_TrimmedCurve.hxx>
 #include <GeomLib.hxx>
@@ -573,6 +574,23 @@ bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pn
             return true;
         }
         return false;
+    }
+    return false;
+}
+
+bool ExamplesBase::InteractiveCurve::getLength(size_t curveIndex, Standard_Real &lenght) const
+{
+    if (curveIndex < d->mCurves.size()) {
+        auto it = d->mCurves.cbegin();
+        auto firstPnt = d->mFirstPoint;
+        if (curveIndex > 0) {
+            std::advance(it, curveIndex - 1);
+            firstPnt = (*it)->getPoints().back();
+            ++it;
+        }
+        auto curve = (*it)->getCurve(d->mFace, firstPnt);
+        lenght = GCPnts_AbscissaPoint::Length(curve);
+        return true;
     }
     return false;
 }

@@ -309,6 +309,12 @@ bool Viewport::mouseReleased(QMouseEvent *event)
                             ctx->Display(d_ptr->mTestAngle, Standard_False);
                             ctx->Deactivate(d_ptr->mTestAngle);
                         });
+                        menu.addAction(tr("Calc curve lenght"), this, [this, cutLine, curveIndex, localPnt](){
+                            Standard_Real l = 0.;
+                            if (cutLine->getLength(curveIndex, l)) {
+                                qDebug() << "Curve index" << curveIndex << "lenght" << l;
+                            }
+                        });
                     }
                     size_t pointIndex = 0u;
                     if (cutLine->curvesCount() > 1 && cutLine->isPointPicked(entity, curveIndex, pointIndex)) {

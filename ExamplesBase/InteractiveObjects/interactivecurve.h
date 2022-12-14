@@ -49,6 +49,7 @@ public:
     bool getMinMaxUParameter(size_t curveIndex, Standard_Real &first, Standard_Real &last) const;
     bool getUParameter(size_t curveIndex, const gp_Pnt &pnt, gp_Pnt &projection, Standard_Real &U) const;
     bool getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pnt &point, gp_Quaternion &rotation) const;
+    bool getLength(size_t curveIndex, Standard_Real &lenght) const;
 
     bool isCurvePicked(const Handle(SelectMgr_EntityOwner) &entity, size_t &index) const;
     bool isPointPicked(const Handle(SelectMgr_EntityOwner) &entity,
