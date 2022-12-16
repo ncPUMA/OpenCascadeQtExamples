@@ -141,7 +141,7 @@ class ViewportPrivate
                 continue;
             }
 
-            const gp_Pnt V1end = P.Translated(V1.Normalized() * 5);
+            const gp_Pnt V1end = P.Translated(V1.Normalized() * 5.);
             auto lineV1 = new AIS_Line(new Geom_CartesianPoint(P), new Geom_CartesianPoint(V1end));
             lineV1->SetWidth(2.);
             lineV1->SetColor(Quantity_NOC_GREEN);
@@ -151,7 +151,7 @@ class ViewportPrivate
             context->SetZLayer(lineV1, depthOffLayer);
             mEdgeFaceLines.push_back(lineV1);
 
-            const gp_Pnt V2end = P.Translated(V2.Normalized() * 5);
+            const gp_Pnt V2end = P.Translated(V2.Normalized() * 5.);
             auto lineV2 = new AIS_Line(new Geom_CartesianPoint(P), new Geom_CartesianPoint(V2end));
             lineV2->SetWidth(2.);
             lineV2->SetColor(Quantity_NOC_VIOLET);

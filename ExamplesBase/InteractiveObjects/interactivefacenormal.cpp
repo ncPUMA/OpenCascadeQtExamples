@@ -6,6 +6,7 @@
 
 #include <QJsonObject>
 
+#include <Adaptor3d_Curve.hxx>
 #include <Adaptor3d_CurveOnSurface.hxx>
 #include <AIS_InteractiveContext.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
@@ -43,6 +44,7 @@
 #include <Select3D_SensitiveSegment.hxx>
 #include <Select3D_SensitiveTriangulation.hxx>
 #include <SelectMgr_EntityOwner.hxx>
+#include <ShapeAnalysis_Curve.hxx>
 #include <ShapeAnalysis_Surface.hxx>
 #include <Standard_Version.hxx>
 #include <StdPrs_Curve.hxx>
@@ -55,6 +57,7 @@
 #include <BRepAdaptor_Surface.hxx>
 #include <Geom2dAdaptor_Curve.hxx>
 #else
+#include <Adaptor3d_HCurve.hxx>
 #include <BRepAdaptor_HSurface.hxx>
 #include <Geom2dAdaptor_HCurve.hxx>
 #endif
@@ -297,6 +300,40 @@ class InteractiveFaceNormalPrivate
         oposite.Transform(mRotation);
     }
 
+#if OCC_VERSION_HEX > 0x070500
+    Handle(Adaptor3d_Curve) createIsoLine(bool ULine) const {
+#else
+    Handle(Adaptor3d_HCurve) createIsoLine(bool ULine) const {
+#endif
+        auto surf = BRep_Tool::Surface(mFace);
+        Standard_Real u1, u2, v1, v2;
+        surf->Bounds(u1, u2, v1, v2);
+
+        Handle(Geom2d_TrimmedCurve) curve;
+        if (ULine) {
+            curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(u2, mUV.Y()));
+        } else {
+            curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), v2));
+        }
+#if OCC_VERSION_HEX > 0x070500
+        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
+#else
+        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
+#endif
+        gp_Pnt pnt, projection;
+        gp_Vec d1Vec;
+        Standard_Real U;
+        curveOnSurf.D1(curveOnSurf.FirstParameter(), pnt, d1Vec);
+        const gp_Pnt V1end = pnt.Translated(d1Vec.Normalized() * 5.);
+        ShapeAnalysis_Curve curveAnalis;
+        curveAnalis.Project(curveOnSurf, V1end, Precision::Confusion(), projection, U);
+#if OCC_VERSION_HEX > 0x070500
+        return curveOnSurf.Trim(curveOnSurf.FirstParameter(), U, Precision::Confusion());
+#else
+        return curveOnSurf.Trim(curveOnSurf.FirstParameter(), U, Precision::Confusion());
+#endif
+    }
+
     void computeSelection(const Handle(SelectMgr_Selection) &selection) {
         Standard_Boolean bHasSelection = Standard_False;
         std::map <Selections, Standard_Boolean> selected;
@@ -343,21 +380,13 @@ class InteractiveFaceNormalPrivate
             {
                 Handle(SelectMgr_EntityOwner) owner = new SelectMgr_EntityOwner(q);
                 owner->SetComesFromDecomposition(Standard_True);
-                auto surf = BRep_Tool::Surface(mFace);
-                Standard_Real u1, u2, v1, v2;
-                surf->Bounds(u1, u2, v1, v2);
-                Standard_Real lenK = 1.;
-                if (surf->IsUClosed() && surf->IsVClosed()) {
-                    lenK /= surf->Value(u1, v1).Distance(surf->Value(u1 + 1, v1));
-                }
-                Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X() + mLen * lenK, mUV.Y()));
 #if OCC_VERSION_HEX > 0x070500
-                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
-#else
-                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
-#endif
                 Handle(Select3D_SensitiveCurve) sens =
-                        new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(curveOnSurf), 50);
+                        new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(*createIsoLine(true)), 50);
+#else
+                Handle(Select3D_SensitiveCurve) sens =
+                        new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(createIsoLine(true)->Curve()), 50);
+#endif
                 sens->SetSensitivityFactor(15);
                 selection->Add(sens);
                 Standard_Boolean isSelected = Standard_False;
@@ -375,21 +404,13 @@ class InteractiveFaceNormalPrivate
             {
                 Handle(SelectMgr_EntityOwner) owner = new SelectMgr_EntityOwner(q);
                 owner->SetComesFromDecomposition(Standard_True);
-                auto surf = BRep_Tool::Surface(mFace);
-                Standard_Real u1, u2, v1, v2;
-                surf->Bounds(u1, u2, v1, v2);
-                Standard_Real lenK = 1.;
-                if (surf->IsUClosed() && surf->IsVClosed()) {
-                    lenK /= surf->Value(u1, v1).Distance(surf->Value(u1, v1 + 1.));
-                }
-                Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), mUV.Y() + mLen * lenK));
 #if OCC_VERSION_HEX > 0x070500
-                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
-#else
-                const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
-#endif
                 Handle(Select3D_SensitiveCurve) sens =
-                        new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(curveOnSurf), 50);
+                        new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(*createIsoLine(false)), 50);
+#else
+                Handle(Select3D_SensitiveCurve) sens =
+                        new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(createIsoLine(false)->Curve()), 50);
+#endif
                 sens->SetSensitivityFactor(15);
                 selection->Add(sens);
                 auto it = selected.find(SelectionVLine);
@@ -477,20 +498,11 @@ class InteractiveFaceNormalPrivate
         aspect->SetInteriorColor(Quantity_ColorRGBA(aspect->Color(), alpha));
         drawer->SetLineAspect(new Prs3d_LineAspect(aspect));
 
-        auto surf = BRep_Tool::Surface(mFace);
-        Standard_Real u1, u2, v1, v2;
-        surf->Bounds(u1, u2, v1, v2);
-        Standard_Real lenK = 1.;
-        if (surf->IsUClosed() && surf->IsVClosed()) {
-            lenK /= surf->Value(u1, v1).Distance(surf->Value(u1 + 1, v1));
-        }
-        Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X() + mLen * lenK, mUV.Y()));
 #if OCC_VERSION_HEX > 0x070500
-        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
+        StdPrs_Curve::Add(presentation, *createIsoLine(true), drawer);
 #else
-        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
+        StdPrs_Curve::Add(presentation, createIsoLine(true)->Curve(), drawer);
 #endif
-        StdPrs_Curve::Add(presentation, curveOnSurf, drawer);
         return aspect;
     }
 
@@ -503,20 +515,11 @@ class InteractiveFaceNormalPrivate
         aspect->SetInteriorColor(Quantity_ColorRGBA(aspect->Color(), alpha));
         drawer->SetLineAspect(new Prs3d_LineAspect(aspect));
 
-        auto surf = BRep_Tool::Surface(mFace);
-        Standard_Real u1, u2, v1, v2;
-        surf->Bounds(u1, u2, v1, v2);
-        Standard_Real lenK = 1.;
-        if (surf->IsUClosed() && surf->IsVClosed()) {
-            lenK /= surf->Value(u1, v1).Distance(surf->Value(u1, v1 + 1.));
-        }
-        Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), mUV.Y() + mLen * lenK));
 #if OCC_VERSION_HEX > 0x070500
-        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
+        StdPrs_Curve::Add(presentation, *createIsoLine(false), drawer);
 #else
-        const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
+        StdPrs_Curve::Add(presentation, createIsoLine(false)->Curve(), drawer);
 #endif
-        StdPrs_Curve::Add(presentation, curveOnSurf, drawer);
         return aspect;
     }
 
