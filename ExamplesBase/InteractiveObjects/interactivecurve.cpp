@@ -18,6 +18,7 @@
 #include <GeomLib.hxx>
 #include <GeomLProp_SLProps.hxx>
 #include <gp_Quaternion.hxx>
+#include <gp_QuaternionSLerp.hxx>
 #include <Prs3d_LineAspect.hxx>
 #include <Select3D_SensitiveCurve.hxx>
 #include <ShapeAnalysis_Curve.hxx>
@@ -558,6 +559,7 @@ bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pn
         auto curve = (*it)->getCurve(d->mFace, firstPnt);
         if (curve.FirstParameter() <= U && U <= curve.LastParameter()) {
             point = curve.Value(U);
+
             auto aSurf = BRep_Tool::Surface(d->mFace);
             ShapeAnalysis_Surface anlisSurf(aSurf);
             const gp_Pnt2d pUV = anlisSurf.ValueOfUV(point, Precision::Confusion());
@@ -570,7 +572,26 @@ bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pn
             }
             gp_Quaternion normalQuat(gp_XYZ(0., 0., 1.), normal.XYZ());
             gp_Quaternion angleQuat(gp_XYZ(1., 0., 0.), angle.XYZ());
-            rotation = normalQuat * angleQuat;
+            gp_Quaternion noUserChangeQuat = normalQuat * angleQuat; // normal
+
+            auto vecPoints = (*it)->getPoints();
+            vecPoints.push_back(firstPnt);
+            bool hasUserRotation = false;
+            for (const auto &p : vecPoints) {
+                if (!p->getRotation().IsEqual(gp_Quaternion())) {
+                    hasUserRotation = true;
+                }
+            }
+            if (!hasUserRotation) {
+                rotation = noUserChangeQuat;
+                return true;
+            }
+
+            auto interpolatedQuat = firstPnt->getRotation();
+            for (const auto &p : (*it)->getPoints()) {
+                interpolatedQuat = gp_QuaternionSLerp::Interpolate(interpolatedQuat, p->getRotation(), .5);
+            }
+            rotation = interpolatedQuat * noUserChangeQuat;
             return true;
         }
         return false;
