@@ -493,7 +493,7 @@ class InteractiveFaceNormalPrivate
                                           const Quantity_Color &color,
                                           const Standard_Real alpha) {
         Handle(Prs3d_Drawer) drawer = new Prs3d_Drawer();
-        Handle(Graphic3d_AspectLine3d) aspect = new Graphic3d_AspectLine3d(color, Aspect_TOL_SOLID, mWidth);
+        Handle(Graphic3d_AspectLine3d) aspect = new Graphic3d_AspectLine3d(color, Aspect_TOL_SOLID, mUvWidth);
         aspect->SetAlphaMode(Graphic3d_AlphaMode_Mask);
         aspect->SetInteriorColor(Quantity_ColorRGBA(aspect->Color(), alpha));
         drawer->SetLineAspect(new Prs3d_LineAspect(aspect));
@@ -510,7 +510,7 @@ class InteractiveFaceNormalPrivate
                                           const Quantity_Color &color,
                                           const Standard_Real alpha) {
         Handle(Prs3d_Drawer) drawer = new Prs3d_Drawer();
-        Handle(Graphic3d_AspectLine3d) aspect = new Graphic3d_AspectLine3d(color, Aspect_TOL_SOLID, mWidth);
+        Handle(Graphic3d_AspectLine3d) aspect = new Graphic3d_AspectLine3d(color, Aspect_TOL_SOLID, mUvWidth);
         aspect->SetAlphaMode(Graphic3d_AlphaMode_Mask);
         aspect->SetInteriorColor(Quantity_ColorRGBA(aspect->Color(), alpha));
         drawer->SetLineAspect(new Prs3d_LineAspect(aspect));
@@ -732,6 +732,7 @@ class InteractiveFaceNormalPrivate
     Quantity_Color mNormalAngleColor = Quantity_NOC_BLUE;
     Standard_Real mLen = 5.;
     Standard_Real mWidth = 2.;
+    Standard_Real mUvWidth = 2.;
     Standard_Real mRingRadius = 5.5;
     Standard_Real mRingWidth = 1.;
     Standard_Integer mFacetesCount = 24;
@@ -774,6 +775,15 @@ void InteractiveFaceNormal::setLabel(const TCollection_AsciiString &txt)
 TCollection_AsciiString InteractiveFaceNormal::getLabel() const
 {
     return d->mLabel;
+}
+
+void ExamplesBase::InteractiveFaceNormal::setUvLineWidth(Standard_Real width)
+{
+    d->mUvWidth = width;
+    auto ctx = GetContext();
+    if (ctx) {
+        ctx->Redisplay(this, Standard_True, Standard_True);
+    }
 }
 
 TopoDS_Face InteractiveFaceNormal::face() const

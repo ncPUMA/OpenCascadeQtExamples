@@ -26,6 +26,7 @@ public:
     //! add text label to corner point
     void setLabel(const TCollection_AsciiString &txt);
     TCollection_AsciiString getLabel() const;
+    void setUvLineWidth(Standard_Real width);
 
     TopoDS_Face face() const;
 
