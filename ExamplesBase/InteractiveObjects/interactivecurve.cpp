@@ -557,12 +557,13 @@ bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pn
             ++it;
         }
         auto curve = (*it)->getCurve(d->mFace, firstPnt);
-        if (curve.FirstParameter() <= U && U <= curve.LastParameter()) {
+        if ((curve.FirstParameter() <= U && U <= curve.LastParameter()) ||
+                (curve.LastParameter() <= U && U <= curve.FirstParameter())) {
             point = curve.Value(U);
 
             auto aSurf = BRep_Tool::Surface(d->mFace);
-            ShapeAnalysis_Surface anlisSurf(aSurf);
-            const gp_Pnt2d pUV = anlisSurf.ValueOfUV(point, Precision::Confusion());
+            ShapeAnalysis_Surface analisSurf(aSurf);
+            const gp_Pnt2d pUV = analisSurf.ValueOfUV(point, Precision::Confusion());
             GeomLProp_SLProps props(aSurf, pUV.X(), pUV.Y(), 1, 0.01);
             gp_Dir normal = props.Normal();
             gp_Dir angle = props.D1U();
@@ -587,12 +588,24 @@ bool InteractiveCurve::getPointOnCurve(size_t curveIndex, Standard_Real U, gp_Pn
                 return true;
             }
 
-            auto interpolatedQuat = firstPnt->getRotation();
+            auto startPnt = firstPnt;
+            ShapeAnalysis_Curve curveAnalis;
+            gp_Pnt tmp;
+            Standard_Real startU;
+            curveAnalis.Project(curve, startPnt->getPnt(), Precision::Confusion(), tmp, startU);
             for (const auto &p : (*it)->getPoints()) {
-                interpolatedQuat = gp_QuaternionSLerp::Interpolate(interpolatedQuat, p->getRotation(), .5);
+                Standard_Real  pU;
+                curveAnalis.Project(curve, p->getPnt(), Precision::Confusion(), tmp, pU);
+                if ((startU <= U && U <= pU) || (pU <= U && U <= startU)) {
+                    Standard_Real T = U / (pU - startU);
+                    auto interpolatedQuat = gp_QuaternionSLerp::Interpolate(startPnt->getRotation(), p->getRotation(), T);
+                    rotation = interpolatedQuat * noUserChangeQuat;
+                    return true;
+                } else {
+                    startPnt = p;
+                    startU = pU;
+                }
             }
-            rotation = interpolatedQuat * noUserChangeQuat;
-            return true;
         }
         return false;
     }
