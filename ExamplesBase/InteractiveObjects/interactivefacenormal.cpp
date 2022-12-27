@@ -689,10 +689,6 @@ class InteractiveFaceNormalPrivate
                 }
 
                 const gp_Dir startAxis = gce_MakeDir(posLoc, fromPos);
-                const gp_Dir toAxis = posLoc.IsEqual(fromPos, Precision::Confusion())
-                  ? startPos.Axis().Direction()
-                  : gce_MakeDir(posLoc, fromPos);
-
                 const gp_Dir currentAxis = gce_MakeDir(posLoc, toPos);
                 Standard_Real angle = startAxis.AngleWithRef(currentAxis, currAxis.Direction());
                 const Standard_Real prevAngle = startAxis.AngleWithRef(gce_MakeDir(posLoc, fromPos), currAxis.Direction());
