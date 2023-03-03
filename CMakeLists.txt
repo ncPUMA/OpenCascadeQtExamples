@@ -27,5 +27,6 @@ add_subdirectory(ExamplesBase)
 add_subdirectory(EdgeExplorer)
 add_subdirectory(PrimitiveShapes)
 add_subdirectory(ModelLoader)
+add_subdirectory(SurfaceEditor)
 
 file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Models")
