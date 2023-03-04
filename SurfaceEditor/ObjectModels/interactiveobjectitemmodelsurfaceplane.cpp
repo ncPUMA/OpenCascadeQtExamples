@@ -2,7 +2,7 @@
 
 #include <QDoubleSpinBox>
 
-#include "interactivesurfaceplane.h"
+#include "../Objects/interactivesurfaceplane.h"
 
 namespace {
 enum Fields {

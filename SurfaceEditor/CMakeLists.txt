@@ -15,22 +15,23 @@ set(PROJECT_SOURCES
     viewport.h
     viewport.cpp
 
-    Surfaces/interactiveobject.h
-    Surfaces/interactiveobject.cpp
-    Surfaces/interactiveobjectitemmodel.h
-    Surfaces/interactiveobjectitemmodel.cpp
-    Surfaces/interactiveobjectitemmodelcreator.h
-    Surfaces/interactiveobjectitemmodelcreator.cpp
-    Surfaces/interactiveobjectitemmodeldelegate.h
-    Surfaces/interactiveobjectitemmodeldelegate.cpp
-    Surfaces/interactiveobjectitemmodelsurface.h
-    Surfaces/interactiveobjectitemmodelsurface.cpp
-    Surfaces/interactiveobjectitemmodelsurfaceplane.h
-    Surfaces/interactiveobjectitemmodelsurfaceplane.cpp
-    Surfaces/interactivesurface.h
-    Surfaces/interactivesurface.cpp
-    Surfaces/interactivesurfaceplane.h
-    Surfaces/interactivesurfaceplane.cpp
+    ObjectModels/interactiveobjectitemmodel.h
+    ObjectModels/interactiveobjectitemmodel.cpp
+    ObjectModels/interactiveobjectitemmodelcreator.h
+    ObjectModels/interactiveobjectitemmodelcreator.cpp
+    ObjectModels/interactiveobjectitemmodeldelegate.h
+    ObjectModels/interactiveobjectitemmodeldelegate.cpp
+    ObjectModels/interactiveobjectitemmodelsurface.h
+    ObjectModels/interactiveobjectitemmodelsurface.cpp
+    ObjectModels/interactiveobjectitemmodelsurfaceplane.h
+    ObjectModels/interactiveobjectitemmodelsurfaceplane.cpp
+
+    Objects/interactiveobject.h
+    Objects/interactiveobject.cpp
+    Objects/interactivesurface.h
+    Objects/interactivesurface.cpp
+    Objects/interactivesurfaceplane.h
+    Objects/interactivesurfaceplane.cpp
 )
 
 add_executable(SurfaceEditor

@@ -5,12 +5,13 @@
 
 #include <gp_Quaternion.hxx>
 
-#include "interactiveobject.h"
+#include "../Objects/interactiveobject.h"
 
 namespace {
 enum Fields
 {
     FieldName,
+    FieldParent,
     FieldTranslationX,
     FieldTranslationY,
     FieldTranslationZ,
@@ -42,6 +43,10 @@ class InteractiveObjectItemModelPrivate
         if (field == FieldName) {
             object->setName(value.toString());
             return true;
+        }
+
+        if (field == FieldParent) {
+            return false;
         }
 
         bool ok = false;
@@ -86,6 +91,7 @@ InteractiveObjectItemModel::InteractiveObjectItemModel(const Handle(InteractiveO
 
     setHorizontalHeaderLabels({ tr("Field"), tr("Value") });
     appendRow(createRow(tr("Object"), d->fields, FieldName));
+    appendRow(createRow(tr("Parent"), d->fields, FieldParent, false));
 
     auto translation = createGroup(tr("Translation"));
     translation->appendRow(createRow(tr("Translation X"), d->fields, FieldTranslationX));
@@ -109,6 +115,15 @@ void InteractiveObjectItemModel::update()
 {
     d->fields[FieldName]->setText(d->object->name());
     d->fields[FieldName]->setData(d->object->name());
+    QString parentValue = tr("No parent");
+    auto parent = d->object->Parent();
+    if (parent) {
+        auto castedParent = Handle(InteractiveObject)::DownCast(parent);
+        if (castedParent) {
+            parentValue = castedParent->name();
+        }
+    }
+    d->fields[FieldParent]->setText(parentValue);
     auto translation = d->translation();
     d->fields[FieldTranslationX]->setText(QString("%1").arg(translation.X(), 7, 'f', 3, QLatin1Char('0')));
     d->fields[FieldTranslationX]->setData(translation.X());
@@ -175,6 +190,8 @@ QWidget *InteractiveObjectItemModel::createFieldEditor(const QModelIndex &index)
         switch (field) {
             case FieldName:
                 ret = new QLineEdit;
+                break;
+            case FieldParent:
                 break;
             case FieldTranslationX:
             case FieldTranslationY:

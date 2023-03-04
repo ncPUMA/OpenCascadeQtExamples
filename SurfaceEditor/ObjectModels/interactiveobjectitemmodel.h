@@ -22,9 +22,12 @@ public:
 
 protected:
     template <typename T>
-    inline static QList<QStandardItem *> createRow(const QString &text, std::map <T, QStandardItem *> &map, T id) {
+    inline static QList<QStandardItem *> createRow(const QString &text, std::map <T, QStandardItem *> &map, T id, bool editable = true) {
         QList<QStandardItem *> ret = { new QStandardItem(text), new QStandardItem };
         ret[0]->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        if (!editable) {
+            ret[1]->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+        }
         map[id] = ret[1];
         return ret;
     }

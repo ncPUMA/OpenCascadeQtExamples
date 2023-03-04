@@ -2,7 +2,7 @@
 
 #include "interactiveobjectitemmodelsurfaceplane.h"
 
-#include "interactivesurfaceplane.h"
+#include "../Objects/interactivesurfaceplane.h"
 
 InteractiveObjectItemModelCreator::InteractiveObjectItemModelCreator()
 {

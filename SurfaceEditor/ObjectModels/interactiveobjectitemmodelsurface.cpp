@@ -2,7 +2,7 @@
 
 #include <QComboBox>
 
-#include "interactivesurface.h"
+#include "../Objects/interactivesurface.h"
 
 class InteractiveObjectItemModelSurfacePrivate
 {
