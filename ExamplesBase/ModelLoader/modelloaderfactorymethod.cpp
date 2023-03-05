@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 
+#include <QCoreApplication>
 #include <QStringList>
 
 #include "breploader.h"
@@ -30,11 +31,11 @@ class ModelLoaderFactoryMethodPrivate
     friend class ModelLoaderFactoryMethod;
 
     ModelLoaderFactoryMethodPrivate() {
-        appendLoader("STEP (*.step *.stp)", new StepLoader());
-        appendLoader("BREP (*.brep)", new BrepLoader());
-        appendLoader("IGES (*.iges)", new IgesLoader());
-        appendLoader("STL (*.stl)"  , new StlLoader());
-        appendLoader("OBJ (*.obj)"  , new ObjLoader());
+        appendLoader(QT_TRANSLATE_NOOP("ModelLoaderFactoryMethod", "STEP (*.step *.stp)"), new StepLoader());
+        appendLoader(QT_TRANSLATE_NOOP("ModelLoaderFactoryMethod", "BREP (*.brep)"), new BrepLoader());
+        appendLoader(QT_TRANSLATE_NOOP("ModelLoaderFactoryMethod", "IGES (*.iges)"), new IgesLoader());
+        appendLoader(QT_TRANSLATE_NOOP("ModelLoaderFactoryMethod", "STL (*.stl)")  , new StlLoader());
+        appendLoader(QT_TRANSLATE_NOOP("ModelLoaderFactoryMethod", "OBJ (*.obj)")  , new ObjLoader());
     }
 
     ~ModelLoaderFactoryMethodPrivate() {
@@ -69,7 +70,7 @@ class ModelLoaderFactoryMethodPrivate
     }
 
     void appendLoader(const char *format, AbstractModelLoader * const loader) {
-        loaders.push_back(std::make_pair(QString(format), loader));
+        loaders.push_back(std::make_pair(QCoreApplication::translate("ModelLoaderFactoryMethod", format), loader));
     }
 
     std::vector <std::pair <QString, AbstractModelLoader *> > loaders;
