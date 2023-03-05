@@ -7,6 +7,7 @@
 #include <QTimer>
 
 #include <AIS_InteractiveContext.hxx>
+#include <AIS_Manipulator.hxx>
 #include <AIS_Shape.hxx>
 #include <StdSelect_BRepOwner.hxx>
 #include <V3d_View.hxx>
@@ -31,14 +32,45 @@ private:
     Viewport *view;
 };
 
+class ObjectManipulator : public AIS_Manipulator
+{
+public:
+    ObjectManipulator(Viewport *viewport)
+        : AIS_Manipulator()
+        , view(viewport)
+    { }
+
+    Standard_Boolean ProcessDragging (const Handle(AIS_InteractiveContext)& theCtx,
+                                      const Handle(V3d_View)& theView,
+                                      const Handle(SelectMgr_EntityOwner)& theOwner,
+                                      const Graphic3d_Vec2i& theDragFrom,
+                                      const Graphic3d_Vec2i& theDragTo,
+                                      const AIS_DragAction theAction) Standard_OVERRIDE {
+        auto ret = AIS_Manipulator::ProcessDragging(theCtx, theView, theOwner,
+                                                    theDragFrom, theDragTo, theAction);
+        if (IsAttached()) {
+            theCtx->RecomputeSelectionOnly(Object());
+            view->objectsChanged();
+        }
+        return ret;
+    }
+
+private:
+    Viewport *view;
+};
+
 class ViewportPrivate
 {
     friend class Viewport;
     friend class ObjectObserver;
 
     bool menuRequest(const QPoint &menuPos, const gp_XYZ &pickedPoint, const Handle(InteractiveObject) &object) {
-        QMenu topMenu;
+        auto ctx = q_ptr->context();
+        if (!ctx) {
+            return false;
+        }
 
+        QMenu topMenu;
         auto addMenu = topMenu.addMenu(Viewport::tr("Add"));
         addMenu->addAction(Viewport::tr("Plane"), q_ptr, [this, object, pickedPoint](){
             auto plane = new InteractiveSurfacePlane;
@@ -50,18 +82,22 @@ class ViewportPrivate
         });
 
         if (object) {
-            topMenu.addAction(Viewport::tr("Remove"), q_ptr, [this, object]() {
+            topMenu.addAction(Viewport::tr("Remove"), q_ptr, [this, object, ctx]() {
+                if (manipulator->IsAttached() && manipulator->Object() == object) {
+                    manipulator->Detach();
+                    ctx->Remove(manipulator, Standard_False);
+                }
+
                 if (object->Parent()) {
                     object->Parent()->RemoveChild(object);
                 }
-                auto ctx = q_ptr->context();
-                if (ctx) {
-                    ctx->Remove(object, Standard_False);
-                    if (mObjectsView) {
-                        auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
-                        model->removeObject(object);
-                    }
+
+                ctx->Remove(object, Standard_False);
+                if (mObjectsView) {
+                    auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
+                    model->removeObject(object);
                 }
+
                 auto it = objectObservers.find(object);
                 if (it != objectObservers.end()) {
                     delete it->second;
@@ -69,8 +105,36 @@ class ViewportPrivate
                 }
             });
             topMenu.addSeparator();
-            topMenu.addAction(Viewport::tr("Transform"));
+            if (!manipulator->IsAttached() || manipulator->Object() != object) {
+                topMenu.addAction(Viewport::tr("Transform"), q_ptr, [this, object, ctx](){
+                    if (manipulator->IsAttached()) {
+                        manipulator->Detach();
+                    }
+
+                    auto ax = gp_Ax2().Transformed(object->Transformation());
+                    auto bndBox = object->BoundingBox().Transformed(object->Transformation());
+                    ax.SetLocation(bndBox.CornerMin().XYZ() + (bndBox.CornerMax().XYZ() - bndBox.CornerMin().XYZ()) / 2.);
+                    manipulator->SetPosition(ax);
+
+                    AIS_Manipulator::OptionsForAttach options;
+                    options.SetAdjustPosition(Standard_False);
+                    options.SetAdjustSize(Standard_False);
+                    options.SetEnableModes(Standard_True);
+                    manipulator->Attach(object, options);
+                    if (!ctx->IsDisplayed(manipulator)) {
+                        ctx->Display(manipulator, Standard_False);
+                    }
+                    ctx->Redisplay(manipulator, Standard_True);
+                });
+            }
             topMenu.addAction(Viewport::tr("Change"));
+        }
+
+        if (ctx->IsDisplayed(manipulator)) {
+            topMenu.addAction(Viewport::tr("End transform"), q_ptr, [this, ctx](){
+                manipulator->Detach();
+                ctx->Remove(manipulator, Standard_True);
+            });
         }
         return topMenu.exec(menuPos) != nullptr;
     }
@@ -150,6 +214,7 @@ class ViewportPrivate
     int objectCounter = 0;
     std::map<Handle(InteractiveObject), ObjectObserver *> objectObservers;
     QTimer *observerCompressor = nullptr;
+    Handle(AIS_Manipulator) manipulator;
 };
 
 Viewport::Viewport(QWidget *parent)
@@ -163,7 +228,7 @@ Viewport::Viewport(QWidget *parent)
 
     d_ptr->observerCompressor = new QTimer(this);
     d_ptr->observerCompressor->setSingleShot(true);
-    d_ptr->observerCompressor->setInterval(100);
+    d_ptr->observerCompressor->setInterval(50);
     connect(d_ptr->observerCompressor, &QTimer::timeout, this, [this]() {
         auto ctx = context();
         if (ctx) {
@@ -176,6 +241,12 @@ Viewport::Viewport(QWidget *parent)
             d_ptr->updatePropertyView();
         }
     });
+
+    d_ptr->manipulator = new ObjectManipulator(this);
+    d_ptr->manipulator->SetPart(0, AIS_MM_Scaling, Standard_False);
+    d_ptr->manipulator->SetPart(1, AIS_MM_Scaling, Standard_False);
+    d_ptr->manipulator->SetPart(2, AIS_MM_Scaling, Standard_False);
+    d_ptr->manipulator->SetModeActivationOnDetection(Standard_True);
 }
 
 Viewport::~Viewport()

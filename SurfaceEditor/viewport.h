@@ -4,6 +4,7 @@
 #include <ExamplesBase/Viewport/viewport.h>
 
 class QAbstractItemView;
+class InteractiveObject;
 class ViewportPrivate;
 
 class Viewport : public ExamplesBase::Viewport
