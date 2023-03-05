@@ -9,6 +9,7 @@ class InteractiveObjectPrivate;
 class InteractiveObjectObserver
 {
 public:
+    InteractiveObjectObserver() = default;
     virtual ~InteractiveObjectObserver() = default;
     virtual void changed() = 0;
 

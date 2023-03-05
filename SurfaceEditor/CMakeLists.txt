@@ -25,6 +25,8 @@ set(PROJECT_SOURCES
     ObjectModels/interactiveobjectitemmodelsurface.cpp
     ObjectModels/interactiveobjectitemmodelsurfaceplane.h
     ObjectModels/interactiveobjectitemmodelsurfaceplane.cpp
+    ObjectModels/objectstreemodel.h
+    ObjectModels/objectstreemodel.cpp
 
     Objects/interactiveobject.h
     Objects/interactiveobject.cpp

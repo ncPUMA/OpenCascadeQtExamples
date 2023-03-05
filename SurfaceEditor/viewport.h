@@ -12,7 +12,10 @@ public:
     Viewport(QWidget *parent);
     ~Viewport();
 
-    void setPropertyView(QAbstractItemView *view);
+    void setObjectsView(QAbstractItemView *objectsView);
+    void setPropertyView(QAbstractItemView *propertyView);
+
+    void objectsChanged();
 
 protected:
     bool selectionChanged() final;
