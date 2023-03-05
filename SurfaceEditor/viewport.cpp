@@ -12,10 +12,11 @@
 #include <StdSelect_BRepOwner.hxx>
 #include <V3d_View.hxx>
 
-#include "ObjectModels/interactiveobjectitemmodel.h"
+#include "ObjectModels/interactiveobjectitemmodelshape.h"
 #include "ObjectModels/interactiveobjectitemmodelcreator.h"
 #include "ObjectModels/interactiveobjectitemmodeldelegate.h"
 #include "ObjectModels/objectstreemodel.h"
+#include "Objects/interactiveshape.h"
 #include "Objects/interactivesurfaceplane.h"
 
 class ObjectObserver : public InteractiveObjectObserver
@@ -72,13 +73,26 @@ class ViewportPrivate
 
         QMenu topMenu;
         auto addMenu = topMenu.addMenu(Viewport::tr("Add"));
-        addMenu->addAction(Viewport::tr("Plane"), q_ptr, [this, object, pickedPoint](){
+        addMenu->addAction(Viewport::tr("Plane"), q_ptr, [this, object, pickedPoint]() {
             auto plane = new InteractiveSurfacePlane;
             plane->setName(Viewport::tr("Plane"));
             if (object) {
                 object->AddChild(plane);
             }
             addToContext(plane, pickedPoint);
+        });
+        addMenu->addSeparator();
+        addMenu->addAction(Viewport::tr("Custom shape..."), q_ptr, [this, object, pickedPoint]() {
+            auto path = InteractiveObjectItemModelShape::requestFilename(q_ptr);
+            if (!path.isEmpty()) {
+                auto shape = new InteractiveShape;
+                shape->setModelPath(path);
+                shape->setName(Viewport::tr("Shape"));
+                if (object) {
+                    object->AddChild(shape);
+                }
+                addToContext(shape, pickedPoint);
+            }
         });
 
         if (object) {
@@ -289,6 +303,21 @@ void Viewport::setObjectsView(QAbstractItemView *objectsView)
             }
 
             d_ptr->updatePropertyView();
+
+            auto emptyShapeCurrent = Handle(InteractiveShape)::DownCast(current);
+            if (emptyShapeCurrent && !emptyShapeCurrent->isValid()) {
+                if (!d_ptr->mPropertyView) {
+                    return;
+                }
+
+                delete d_ptr->mPropertyView->model();
+
+                InteractiveObjectItemModel *model = nullptr;
+                InteractiveObjectItemModelCreator creator;
+                model = creator.createModel(current);
+                model->update();
+                d_ptr->mPropertyView->setModel(model);
+            }
         }
     });
 

@@ -21,6 +21,8 @@ set(PROJECT_SOURCES
     ObjectModels/interactiveobjectitemmodelcreator.cpp
     ObjectModels/interactiveobjectitemmodeldelegate.h
     ObjectModels/interactiveobjectitemmodeldelegate.cpp
+    ObjectModels/interactiveobjectitemmodelshape.h
+    ObjectModels/interactiveobjectitemmodelshape.cpp
     ObjectModels/interactiveobjectitemmodelsurface.h
     ObjectModels/interactiveobjectitemmodelsurface.cpp
     ObjectModels/interactiveobjectitemmodelsurfaceplane.h
@@ -30,6 +32,8 @@ set(PROJECT_SOURCES
 
     Objects/interactiveobject.h
     Objects/interactiveobject.cpp
+    Objects/interactiveshape.h
+    Objects/interactiveshape.cpp
     Objects/interactivesurface.h
     Objects/interactivesurface.cpp
     Objects/interactivesurfaceplane.h

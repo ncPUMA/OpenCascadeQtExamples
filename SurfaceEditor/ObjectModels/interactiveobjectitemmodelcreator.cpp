@@ -1,7 +1,9 @@
 #include "interactiveobjectitemmodelcreator.h"
 
+#include "interactiveobjectitemmodelshape.h"
 #include "interactiveobjectitemmodelsurfaceplane.h"
 
+#include "../Objects/interactiveshape.h"
 #include "../Objects/interactivesurfaceplane.h"
 
 InteractiveObjectItemModelCreator::InteractiveObjectItemModelCreator()
@@ -15,6 +17,11 @@ InteractiveObjectItemModel *InteractiveObjectItemModelCreator::createModel(const
         auto plane = Handle(InteractiveSurfacePlane)::DownCast(interactive);
         if (plane) {
             return new InteractiveObjectItemModelSurfacePlane(plane);
+        }
+
+        auto shape = Handle(InteractiveShape)::DownCast(interactive);
+        if (shape) {
+            return new InteractiveObjectItemModelShape(shape);
         }
 
         return new InteractiveObjectItemModel(interactive);
