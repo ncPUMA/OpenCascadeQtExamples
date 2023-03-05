@@ -20,7 +20,9 @@ QWidget *InteractiveObjectItemModelDelegate::createEditor(QWidget *parent,
     auto mdl = model();
     if (mdl) {
         auto widget = mdl->createFieldEditor(index);
-        widget->setParent(parent);
+        if (widget) {
+            widget->setParent(parent);
+        }
         return widget;
     }
     return nullptr;

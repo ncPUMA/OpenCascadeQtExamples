@@ -12,6 +12,8 @@
 #include <StdSelect_BRepOwner.hxx>
 #include <V3d_View.hxx>
 
+#include "Editors/interactiveobjecteditor.h"
+#include "Editors/interactiveobjecteditorcreator.h"
 #include "ObjectModels/interactiveobjectitemmodelshape.h"
 #include "ObjectModels/interactiveobjectitemmodelcreator.h"
 #include "ObjectModels/interactiveobjectitemmodeldelegate.h"
@@ -102,6 +104,12 @@ class ViewportPrivate
                     ctx->Remove(manipulator, Standard_False);
                 }
 
+                if (editor && editor->Parent() && editor->Parent() == object) {
+                    object->RemoveChild(editor);
+                    ctx->Remove(editor, Standard_True);
+                    editor = nullptr;
+                }
+
                 if (object->Parent()) {
                     object->Parent()->RemoveChild(object);
                 }
@@ -120,7 +128,9 @@ class ViewportPrivate
             });
             topMenu.addSeparator();
             if (!manipulator->IsAttached() || manipulator->Object() != object) {
-                topMenu.addAction(Viewport::tr("Transform"), q_ptr, [this, object, ctx](){
+                topMenu.addAction(Viewport::tr("Transform"), q_ptr, [this, object, ctx]() {
+                    removeEditor();
+
                     if (manipulator->IsAttached()) {
                         manipulator->Detach();
                     }
@@ -138,16 +148,35 @@ class ViewportPrivate
                     if (!ctx->IsDisplayed(manipulator)) {
                         ctx->Display(manipulator, Standard_False);
                     }
-                    ctx->Redisplay(manipulator, Standard_True);
+                    ctx->Redisplay(manipulator, Standard_False);
                 });
             }
-            topMenu.addAction(Viewport::tr("Change"));
+            if (!editor || !editor->Parent() || editor->Parent() != object) {
+                topMenu.addAction(Viewport::tr("Edit"), q_ptr, [this, object, ctx]() {
+                    if (ctx->IsDisplayed(manipulator)) {
+                        manipulator->Detach();
+                        ctx->Remove(manipulator, Standard_True);
+                    }
+                    removeEditor();
+                    InteractiveObjectEditorCreator creator;
+                    editor = creator.create(object);
+                    if (editor) {
+                        object->AddChild(editor);
+                        ctx->Display(editor, Standard_False);
+                    }
+                });
+            }
         }
 
         if (ctx->IsDisplayed(manipulator)) {
-            topMenu.addAction(Viewport::tr("End transform"), q_ptr, [this, ctx](){
+            topMenu.addAction(Viewport::tr("End transform"), q_ptr, [this, ctx]() {
                 manipulator->Detach();
                 ctx->Remove(manipulator, Standard_True);
+            });
+        }
+        if (ctx->IsDisplayed(editor)) {
+            topMenu.addAction(Viewport::tr("End edit"), q_ptr, [this]() {
+                removeEditor();
             });
         }
         return topMenu.exec(menuPos) != nullptr;
@@ -222,6 +251,18 @@ class ViewportPrivate
         mPropertyView->setModel(model);
     }
 
+    void removeEditor() {
+        if (editor) {
+            if (editor->Parent()) {
+                editor->Parent()->RemoveChild(editor);
+            }
+            auto ctx = q_ptr->context();
+            if (ctx) {
+                ctx->Remove(editor, Standard_True);
+            }
+        }
+    }
+
     Viewport *q_ptr = nullptr;
     QAbstractItemView *mObjectsView = nullptr;
     QAbstractItemView *mPropertyView = nullptr;
@@ -229,6 +270,7 @@ class ViewportPrivate
     std::map<Handle(InteractiveObject), ObjectObserver *> objectObservers;
     QTimer *observerCompressor = nullptr;
     Handle(AIS_Manipulator) manipulator;
+    Handle(InteractiveObjectEditor) editor;
 };
 
 Viewport::Viewport(QWidget *parent)
@@ -253,6 +295,21 @@ Viewport::Viewport(QWidget *parent)
             }
 
             d_ptr->updatePropertyView();
+
+            if (d_ptr->manipulator->IsAttached()) {
+                auto object = Handle(InteractiveObject)::DownCast(d_ptr->manipulator->Object());
+                if (object) {
+                    auto ax = gp_Ax2().Transformed(object->Transformation());
+                    auto bndBox = object->BoundingBox().Transformed(object->Transformation());
+                    ax.SetLocation(bndBox.CornerMin().XYZ() + (bndBox.CornerMax().XYZ() - bndBox.CornerMin().XYZ()) / 2.);
+                    d_ptr->manipulator->SetPosition(ax);
+                    ctx->Redisplay(d_ptr->manipulator, Standard_True);
+                }
+            }
+
+            if (d_ptr->editor) {
+                d_ptr->editor->update();
+            }
         }
     });
 
@@ -342,7 +399,9 @@ void Viewport::setPropertyView(QAbstractItemView *propertyView)
 
 void Viewport::objectsChanged()
 {
-    d_ptr->observerCompressor->start();
+    if (!d_ptr->observerCompressor->isActive()) {
+        d_ptr->observerCompressor->start();
+    }
 }
 
 bool Viewport::selectionChanged()

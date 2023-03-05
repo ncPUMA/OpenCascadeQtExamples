@@ -15,6 +15,15 @@ set(PROJECT_SOURCES
     viewport.h
     viewport.cpp
 
+    Editors/dimentionlenghteditor.h
+    Editors/dimentionlenghteditor.cpp
+    Editors/interactiveobjecteditor.h
+    Editors/interactiveobjecteditor.cpp
+    Editors/interactiveobjecteditorcreator.h
+    Editors/interactiveobjecteditorcreator.cpp
+    Editors/interactiveobjectsurfaceplaneeditor.h
+    Editors/interactiveobjectsurfaceplaneeditor.cpp
+
     ObjectModels/interactiveobjectitemmodel.h
     ObjectModels/interactiveobjectitemmodel.cpp
     ObjectModels/interactiveobjectitemmodelcreator.h
