@@ -15,8 +15,8 @@ class InteractiveObjectItemModelSurfacePlanePrivate
 {
     friend class InteractiveObjectItemModelSurfacePlane;
 
-     Handle(InteractiveSurfacePlane) object;
-     std::map<Fields, QStandardItem *> fields;
+    Handle(InteractiveSurfacePlane) object;
+    std::map<Fields, QStandardItem *> fields;
 };
 
 InteractiveObjectItemModelSurfacePlane::InteractiveObjectItemModelSurfacePlane(const Handle(InteractiveSurfacePlane) &object, QObject *parent)
@@ -63,7 +63,6 @@ bool InteractiveObjectItemModelSurfacePlane::setSurfaceFieldData(const QModelInd
             d->object->setVmax(vl);
         }
 
-        update();
         return true;
     }
     return false;

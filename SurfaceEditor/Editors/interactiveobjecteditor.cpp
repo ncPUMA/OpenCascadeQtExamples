@@ -18,6 +18,9 @@ InteractiveObjectEditor::InteractiveObjectEditor(const Handle(InteractiveObject)
     , d(new InteractiveObjectEditorPrivate)
 {
     d->object = object;
+
+    SetMutable(Standard_True);
+    SetZLayer(Graphic3d_ZLayerId_Topmost);
 }
 
 InteractiveObjectEditor::~InteractiveObjectEditor()

@@ -52,7 +52,7 @@ Standard_Real InteractiveSurfacePlane::getVmax() const
 
 void InteractiveSurfacePlane::setUmax(Standard_Real U)
 {
-    if (U > 0) {
+    if (U > 0.) {
         d->Umax = U;
         d->updatePlane();
         notify();
@@ -61,7 +61,7 @@ void InteractiveSurfacePlane::setUmax(Standard_Real U)
 
 void InteractiveSurfacePlane::setVmax(Standard_Real V)
 {
-    if (V > 0) {
+    if (V > 0.) {
         d->Vmax = V;
         d->updatePlane();
         notify();

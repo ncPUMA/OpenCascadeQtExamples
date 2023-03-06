@@ -19,6 +19,7 @@
 #include "ObjectModels/interactiveobjectitemmodeldelegate.h"
 #include "ObjectModels/objectstreemodel.h"
 #include "Objects/interactiveshape.h"
+#include "Objects/interactivesurfaceparabofrevol.h"
 #include "Objects/interactivesurfaceplane.h"
 
 class ObjectObserver : public InteractiveObjectObserver
@@ -77,11 +78,11 @@ class ViewportPrivate
         auto addMenu = topMenu.addMenu(Viewport::tr("Add"));
         addMenu->addAction(Viewport::tr("Plane"), q_ptr, [this, object, pickedPoint]() {
             auto plane = new InteractiveSurfacePlane;
-            plane->setName(Viewport::tr("Plane"));
-            if (object) {
-                object->AddChild(plane);
-            }
-            addToContext(plane, pickedPoint);
+            addToContext(plane, pickedPoint, Viewport::tr("Plane"), object);
+        });
+        addMenu->addAction(Viewport::tr("Parabola of revol"), q_ptr, [this, object, pickedPoint]() {
+            auto parab = new InteractiveSurfaceParabOfRevol;
+            addToContext(parab, pickedPoint, Viewport::tr("ParabOfRevol"), object);
         });
         addMenu->addSeparator();
         addMenu->addAction(Viewport::tr("Custom shape..."), q_ptr, [this, object, pickedPoint]() {
@@ -89,11 +90,7 @@ class ViewportPrivate
             if (!path.isEmpty()) {
                 auto shape = new InteractiveShape;
                 shape->setModelPath(path);
-                shape->setName(Viewport::tr("Shape"));
-                if (object) {
-                    object->AddChild(shape);
-                }
-                addToContext(shape, pickedPoint);
+                addToContext(shape, pickedPoint, Viewport::tr("Shape"), object);
             }
         });
 
@@ -182,14 +179,18 @@ class ViewportPrivate
         return topMenu.exec(menuPos) != nullptr;
     }
 
-    void addToContext(const Handle(InteractiveObject) &object, const gp_XYZ &translation) {
+    void addToContext(const Handle(InteractiveObject) &object, const gp_XYZ &translation,
+                      const QString &name, const Handle(InteractiveObject) &parent) {
+        if (parent) {
+            object->AddChild(object);
+        }
         auto ctx = q_ptr->context();
         if (ctx) {
             ctx->Display(object, Standard_False);
             gp_Trsf trsf;
             trsf.SetTranslation(translation);
             ctx->SetLocation(object, trsf);
-            object->setName(QString("%1_%2").arg(object->name()).arg(++objectCounter));
+            object->setName(QString("%1_%2").arg(name).arg(++objectCounter));
             if (mObjectsView) {
                 auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
                 model->addObject(object);

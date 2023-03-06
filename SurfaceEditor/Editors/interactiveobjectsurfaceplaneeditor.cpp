@@ -3,7 +3,7 @@
 #include "../Objects/interactivesurfaceplane.h"
 
 #include "dimentionlenghteditor.h"
-#include <QDebug>
+
 class InteractiveObjectSurfacePlaneEditorPrivate
 {
     friend class InteractiveObjectSurfacePlaneEditor;

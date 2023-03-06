@@ -17,10 +17,14 @@ set(PROJECT_SOURCES
 
     Editors/dimentionlenghteditor.h
     Editors/dimentionlenghteditor.cpp
+    Editors/manipulatoreditor.h
+    Editors/manipulatoreditor.cpp
     Editors/interactiveobjecteditor.h
     Editors/interactiveobjecteditor.cpp
     Editors/interactiveobjecteditorcreator.h
     Editors/interactiveobjecteditorcreator.cpp
+    Editors/interactiveobjectsurfaceparabofrevoleditor.h
+    Editors/interactiveobjectsurfaceparabofrevoleditor.cpp
     Editors/interactiveobjectsurfaceplaneeditor.h
     Editors/interactiveobjectsurfaceplaneeditor.cpp
 
@@ -34,6 +38,8 @@ set(PROJECT_SOURCES
     ObjectModels/interactiveobjectitemmodelshape.cpp
     ObjectModels/interactiveobjectitemmodelsurface.h
     ObjectModels/interactiveobjectitemmodelsurface.cpp
+    ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.h
+    ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.cpp
     ObjectModels/interactiveobjectitemmodelsurfaceplane.h
     ObjectModels/interactiveobjectitemmodelsurfaceplane.cpp
     ObjectModels/objectstreemodel.h
@@ -45,6 +51,8 @@ set(PROJECT_SOURCES
     Objects/interactiveshape.cpp
     Objects/interactivesurface.h
     Objects/interactivesurface.cpp
+    Objects/interactivesurfaceparabofrevol.h
+    Objects/interactivesurfaceparabofrevol.cpp
     Objects/interactivesurfaceplane.h
     Objects/interactivesurfaceplane.cpp
 )
