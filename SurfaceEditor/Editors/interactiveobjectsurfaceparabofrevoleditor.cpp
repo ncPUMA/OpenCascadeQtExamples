@@ -61,14 +61,13 @@ InteractiveObjectSurfaceParabOfRevolEditor::~InteractiveObjectSurfaceParabOfRevo
 
 void InteractiveObjectSurfaceParabOfRevolEditor::SetContext(const Handle(AIS_InteractiveContext) &ctx)
 {
+    if (!ctx) {
+        AddChild(d->labelF);
+    }
     AIS_InteractiveObject::SetContext(ctx);
     if (ctx) {
         ctx->Display(d->labelF, Standard_True);
         ctx->Deactivate(d->labelF);
-    } else {
-        if (d->surface->GetContext()) {
-            d->surface->GetContext()->Remove(d->labelF, Standard_False);
-        }
     }
 }
 
