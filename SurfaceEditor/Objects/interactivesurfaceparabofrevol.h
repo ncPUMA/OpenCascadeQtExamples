@@ -1,32 +1,28 @@
 #ifndef INTERACTIVESURFACEPARABOFREVOL_H
 #define INTERACTIVESURFACEPARABOFREVOL_H
 
-#include "interactivesurface.h"
+#include "interactivesurfacerevolution.h"
 
 class InteractiveSurfaceParabOfRevolPrivate;
 
-class InteractiveSurfaceParabOfRevol : public InteractiveSurface
+class InteractiveSurfaceParabOfRevol : public InteractiveSurfaceRevolution
 {
-    DEFINE_STANDARD_RTTIEXT(InteractiveSurfaceParabOfRevol, InteractiveSurface)
+    DEFINE_STANDARD_RTTIEXT(InteractiveSurfaceParabOfRevol, InteractiveSurfaceRevolution)
 
 public:
     InteractiveSurfaceParabOfRevol();
     ~InteractiveSurfaceParabOfRevol();
 
     Standard_Real getFocal() const;
-    gp_Dir getRevolutionDirection() const;
-    Standard_Real getUmax() const;
-    Standard_Real getVmax() const;
-
     void setFocal(Standard_Real F);
-    void setRevolutionDirection(const gp_Dir &direction);
-    void setUmax(Standard_Real U);
-    void setVmax(Standard_Real V);
+
+protected:
+    Handle(Geom_Curve) getCurve() const Standard_OVERRIDE;
 
 private:
     InteractiveSurfaceParabOfRevolPrivate *d;
 };
 
-DEFINE_STANDARD_HANDLE(InteractiveSurfaceParabOfRevol, InteractiveSurface)
+DEFINE_STANDARD_HANDLE(InteractiveSurfaceParabOfRevol, InteractiveSurfaceRevolution)
 
 #endif // INTERACTIVESURFACEPARABOFREVOL_H

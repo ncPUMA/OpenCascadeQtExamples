@@ -42,6 +42,8 @@ set(PROJECT_SOURCES
     ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.cpp
     ObjectModels/interactiveobjectitemmodelsurfaceplane.h
     ObjectModels/interactiveobjectitemmodelsurfaceplane.cpp
+    ObjectModels/interactiveobjectitemmodelsurfacerevolution.h
+    ObjectModels/interactiveobjectitemmodelsurfacerevolution.cpp
     ObjectModels/objectstreemodel.h
     ObjectModels/objectstreemodel.cpp
 
@@ -55,6 +57,8 @@ set(PROJECT_SOURCES
     Objects/interactivesurfaceparabofrevol.cpp
     Objects/interactivesurfaceplane.h
     Objects/interactivesurfaceplane.cpp
+    Objects/interactivesurfacerevolution.h
+    Objects/interactivesurfacerevolution.cpp
 )
 
 add_executable(SurfaceEditor

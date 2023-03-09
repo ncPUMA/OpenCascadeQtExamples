@@ -1,21 +1,21 @@
 #ifndef INTERACTIVEOBJECTITEMMODELSURFACEPARABOFREVOL_H
 #define INTERACTIVEOBJECTITEMMODELSURFACEPARABOFREVOL_H
 
-#include "interactiveobjectitemmodelsurface.h"
+#include "interactiveobjectitemmodelsurfacerevolution.h"
 
 class InteractiveSurfaceParabOfRevol;
 class InteractiveObjectItemModelSurfaceParabOfRevolPrivate;
 
-class InteractiveObjectItemModelSurfaceParabOfRevol : public InteractiveObjectItemModelSurface
+class InteractiveObjectItemModelSurfaceParabOfRevol : public InteractiveObjectItemModelSurfaceRevolution
 {
 public:
     InteractiveObjectItemModelSurfaceParabOfRevol(const Handle(InteractiveSurfaceParabOfRevol) &object, QObject *parent = nullptr);
     ~InteractiveObjectItemModelSurfaceParabOfRevol();
 
 protected:
-    void updateSurfaceFields();
-    bool setSurfaceFieldData(const QModelIndex &index, const QVariant &value);
-    QWidget *surfaceFieldEditor(const QModelIndex &index) const;
+    void updateRevolutionFields() final;
+    bool setRevolutionFieldData(const QModelIndex &index, const QVariant &value) final;
+    QWidget *revolutionFieldEditor(const QModelIndex &index) const final;
 
 private:
     InteractiveObjectItemModelSurfaceParabOfRevolPrivate *d;
