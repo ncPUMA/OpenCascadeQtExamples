@@ -155,6 +155,8 @@ class ViewportPrivate
                         ctx->Remove(manipulator, Standard_True);
                     }
                     removeEditor();
+
+                    ctx->Deactivate(object);
                     InteractiveObjectEditorCreator creator;
                     editor = creator.create(object);
                     if (editor) {
@@ -254,12 +256,17 @@ class ViewportPrivate
 
     void removeEditor() {
         if (editor) {
-            if (editor->Parent()) {
-                editor->Parent()->RemoveChild(editor);
+            auto parent = editor->Parent();
+            if (parent) {
+                parent->RemoveChild(editor);
             }
             auto ctx = q_ptr->context();
             if (ctx) {
                 ctx->Remove(editor, Standard_True);
+                auto interactive = Handle(AIS_InteractiveObject)::DownCast(parent);
+                if (interactive) {
+                    ctx->Activate(interactive);
+                }
             }
         }
     }
