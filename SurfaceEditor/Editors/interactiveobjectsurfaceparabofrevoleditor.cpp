@@ -12,6 +12,16 @@
 #include "dimentionlenghteditor.h"
 #include "manipulatoreditor.h"
 
+class Point : public AIS_Point
+{
+public:
+    Point()
+        : AIS_Point(new Geom_CartesianPoint(gp_Pnt())) { }
+
+protected:
+    void ComputeSelection(const Handle(SelectMgr_Selection) &, const Standard_Integer) Standard_OVERRIDE { }
+};
+
 class InteractiveObjectSurfaceParabOfRevolEditorPrivate
 {
     friend class InteractiveObjectSurfaceParabOfRevolEditor;
@@ -43,9 +53,9 @@ InteractiveObjectSurfaceParabOfRevolEditor::InteractiveObjectSurfaceParabOfRevol
 {
     d->surface = surface;
 
-    d->pointF = new AIS_Point(new Geom_CartesianPoint(gp_Pnt()));
+    d->pointF = new Point;
     AddChild(d->pointF);
-    d->labelF = new AIS_TextLabel();
+    d->labelF = new AIS_TextLabel;
     d->labelF->SetText("F");
     d->labelF->SetZLayer(Graphic3d_ZLayerId_Topmost);
     d->editorFocal = new DimentionLenghtEditor(gp_Pnt(), gp_Pnt(1., 1., 1.), gp_Pln());
