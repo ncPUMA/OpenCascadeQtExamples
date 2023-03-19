@@ -28,6 +28,6 @@ private:
     InteractiveSurfaceHyperOfRevolPrivate *d;
 };
 
-DEFINE_STANDARD_HANDLE(InteractiveSurfaceParabOfRevol, InteractiveSurfaceRevolution)
+DEFINE_STANDARD_HANDLE(InteractiveSurfaceHyperOfRevol, InteractiveSurfaceRevolution)
 
 #endif // INTERACTIVESURFACEHYPEROFREVOL_H
