@@ -21,6 +21,8 @@ set(PROJECT_SOURCES
     Editors/interactiveobjecteditor.cpp
     Editors/interactiveobjecteditorcreator.h
     Editors/interactiveobjecteditorcreator.cpp
+    Editors/interactiveobjectsurfacecircleofrevoleditor.h
+    Editors/interactiveobjectsurfacecircleofrevoleditor.cpp
     Editors/interactiveobjectsurfacehyperofrevoleditor.h
     Editors/interactiveobjectsurfacehyperofrevoleditor.cpp
     Editors/interactiveobjectsurfaceparabofrevoleditor.h
@@ -42,6 +44,8 @@ set(PROJECT_SOURCES
     ObjectModels/interactiveobjectitemmodelshape.cpp
     ObjectModels/interactiveobjectitemmodelsurface.h
     ObjectModels/interactiveobjectitemmodelsurface.cpp
+    ObjectModels/interactiveobjectitemmodelsurfacecircleofrevol.h
+    ObjectModels/interactiveobjectitemmodelsurfacecircleofrevol.cpp
     ObjectModels/interactiveobjectitemmodelsurfacehyperofrevol.h
     ObjectModels/interactiveobjectitemmodelsurfacehyperofrevol.cpp
     ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.h
@@ -59,6 +63,8 @@ set(PROJECT_SOURCES
     Objects/interactiveshape.cpp
     Objects/interactivesurface.h
     Objects/interactivesurface.cpp
+    Objects/interactivesurfacecircleofrevol.h
+    Objects/interactivesurfacecircleofrevol.cpp
     Objects/interactivesurfacehyperofrevol.h
     Objects/interactivesurfacehyperofrevol.cpp
     Objects/interactivesurfaceparabofrevol.h

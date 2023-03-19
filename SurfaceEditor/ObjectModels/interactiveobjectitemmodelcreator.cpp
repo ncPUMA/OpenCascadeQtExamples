@@ -1,11 +1,13 @@
 #include "interactiveobjectitemmodelcreator.h"
 
 #include "interactiveobjectitemmodelshape.h"
+#include "interactiveobjectitemmodelsurfacecircleofrevol.h"
 #include "interactiveobjectitemmodelsurfacehyperofrevol.h"
 #include "interactiveobjectitemmodelsurfaceparabofrevol.h"
 #include "interactiveobjectitemmodelsurfaceplane.h"
 
 #include "../Objects/interactiveshape.h"
+#include "../Objects/interactivesurfacecircleofrevol.h"
 #include "../Objects/interactivesurfacehyperofrevol.h"
 #include "../Objects/interactivesurfaceparabofrevol.h"
 #include "../Objects/interactivesurfaceplane.h"
@@ -21,6 +23,11 @@ InteractiveObjectItemModel *InteractiveObjectItemModelCreator::createModel(const
         auto plane = Handle(InteractiveSurfacePlane)::DownCast(interactive);
         if (plane) {
             return new InteractiveObjectItemModelSurfacePlane(plane);
+        }
+
+        auto circle = Handle(InteractiveSurfaceCircleOfRevol)::DownCast(interactive);
+        if (circle) {
+            return new InteractiveObjectItemModelSurfaceCircleOfRevol(circle);
         }
 
         auto hyper = Handle(InteractiveSurfaceHyperOfRevol)::DownCast(interactive);

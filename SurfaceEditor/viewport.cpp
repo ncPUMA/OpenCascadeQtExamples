@@ -19,6 +19,7 @@
 #include "ObjectModels/interactiveobjectitemmodeldelegate.h"
 #include "ObjectModels/objectstreemodel.h"
 #include "Objects/interactiveshape.h"
+#include "Objects/interactivesurfacecircleofrevol.h"
 #include "Objects/interactivesurfacehyperofrevol.h"
 #include "Objects/interactivesurfaceparabofrevol.h"
 #include "Objects/interactivesurfaceplane.h"
@@ -80,6 +81,10 @@ class ViewportPrivate
         addMenu->addAction(Viewport::tr("Plane"), q_ptr, [this, object, pickedPoint]() {
             auto plane = new InteractiveSurfacePlane;
             addToContext(plane, pickedPoint, Viewport::tr("Plane"), object);
+        });
+        addMenu->addAction(Viewport::tr("Circle of revol"), q_ptr, [this, object, pickedPoint]() {
+            auto parab = new InteractiveSurfaceCircleOfRevol;
+            addToContext(parab, pickedPoint, Viewport::tr("CircleOfRevol"), object);
         });
         addMenu->addAction(Viewport::tr("Parabola of revol"), q_ptr, [this, object, pickedPoint]() {
             auto parab = new InteractiveSurfaceParabOfRevol;

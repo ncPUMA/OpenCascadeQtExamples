@@ -1,9 +1,11 @@
 #include "interactiveobjecteditorcreator.h"
 
+#include "../Objects/interactivesurfacecircleofrevol.h"
 #include "../Objects/interactivesurfacehyperofrevol.h"
 #include "../Objects/interactivesurfaceparabofrevol.h"
 #include "../Objects/interactivesurfaceplane.h"
 
+#include "interactiveobjectsurfacecircleofrevoleditor.h"
 #include "interactiveobjectsurfacehyperofrevoleditor.h"
 #include "interactiveobjectsurfaceparabofrevoleditor.h"
 #include "interactiveobjectsurfaceplaneeditor.h"
@@ -18,6 +20,10 @@ Handle(InteractiveObjectEditor) InteractiveObjectEditorCreator::create(const Han
     auto hyper = Handle(InteractiveSurfaceHyperOfRevol)::DownCast(object);
     if (hyper) {
         return new InteractiveObjectSurfaceHyperOfRevolEditor(hyper);
+    }
+    auto circle = Handle(InteractiveSurfaceCircleOfRevol)::DownCast(object);
+    if (circle) {
+        return new InteractiveObjectSurfaceCircleOfRevolEditor(circle);
     }
     auto parab = Handle(InteractiveSurfaceParabOfRevol)::DownCast(object);
     if (parab) {
