@@ -42,8 +42,8 @@ void InteractiveObjectEditor::handleEditor(const Handle(AIS_InteractiveObject) &
         if (!interactive) {
             ctx->SetSelected(d->object, Standard_True);
         } else if (interactive && interactive != d->object) {
-            ctx->ClearSelected(Standard_True);
-            ctx->SetSelected(d->object, Standard_True);
+//            ctx->ClearSelected(Standard_True);
+//            ctx->SetSelected(d->object, Standard_True);
         }
     }
 
