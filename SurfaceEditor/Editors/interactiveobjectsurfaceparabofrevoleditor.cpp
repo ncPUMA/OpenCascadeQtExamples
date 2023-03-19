@@ -1,7 +1,6 @@
 #include "interactiveobjectsurfaceparabofrevoleditor.h"
 
 #include <AIS_InteractiveContext.hxx>
-#include <AIS_Point.hxx>
 #include <AIS_TextLabel.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <Geom_Parabola.hxx>
@@ -10,17 +9,7 @@
 #include "../Objects/interactivesurfaceparabofrevol.h"
 
 #include "dimentionlenghteditor.h"
-#include "manipulatoreditor.h"
-
-class Point : public AIS_Point
-{
-public:
-    Point()
-        : AIS_Point(new Geom_CartesianPoint(gp_Pnt())) { }
-
-protected:
-    void ComputeSelection(const Handle(SelectMgr_Selection) &, const Standard_Integer) Standard_OVERRIDE { }
-};
+#include "point.h"
 
 class InteractiveObjectSurfaceParabOfRevolEditorPrivate
 {

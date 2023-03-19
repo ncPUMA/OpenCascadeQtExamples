@@ -9,7 +9,7 @@ class InteractiveSurfaceRevolutionPrivate
 {
     friend class InteractiveSurfaceRevolution;
 
-    void updateSurface(const opencascade::handle<Geom_Curve> &curve) {
+    void updateSurface(const Handle(Geom_Curve) &curve) {
         Handle(Geom_SurfaceOfRevolution) revolution =
                 new Geom_SurfaceOfRevolution(curve, gp_Ax1(gp::Origin(), revolutionDirection));
         BRepBuilderAPI_MakeFace faceMaker(revolution, 0., Umax, 0., Vmax, Precision::Confusion());
@@ -22,7 +22,7 @@ class InteractiveSurfaceRevolutionPrivate
 
     InteractiveSurfaceRevolution *q;
     gp_Dir revolutionDirection = gp::DX();
-    Standard_Real Umax = M_PI * 2.;
+    Standard_Real Umax = M_PI * 2;
     Standard_Real Vmax = 200.;
 };
 

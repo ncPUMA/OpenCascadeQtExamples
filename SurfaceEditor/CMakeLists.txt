@@ -17,16 +17,20 @@ set(PROJECT_SOURCES
 
     Editors/dimentionlenghteditor.h
     Editors/dimentionlenghteditor.cpp
-    Editors/manipulatoreditor.h
-    Editors/manipulatoreditor.cpp
     Editors/interactiveobjecteditor.h
     Editors/interactiveobjecteditor.cpp
     Editors/interactiveobjecteditorcreator.h
     Editors/interactiveobjecteditorcreator.cpp
+    Editors/interactiveobjectsurfacehyperofrevoleditor.h
+    Editors/interactiveobjectsurfacehyperofrevoleditor.cpp
     Editors/interactiveobjectsurfaceparabofrevoleditor.h
     Editors/interactiveobjectsurfaceparabofrevoleditor.cpp
     Editors/interactiveobjectsurfaceplaneeditor.h
     Editors/interactiveobjectsurfaceplaneeditor.cpp
+    Editors/manipulatoreditor.h
+    Editors/manipulatoreditor.cpp
+    Editors/point.h
+    Editors/point.cpp
 
     ObjectModels/interactiveobjectitemmodel.h
     ObjectModels/interactiveobjectitemmodel.cpp
@@ -38,6 +42,8 @@ set(PROJECT_SOURCES
     ObjectModels/interactiveobjectitemmodelshape.cpp
     ObjectModels/interactiveobjectitemmodelsurface.h
     ObjectModels/interactiveobjectitemmodelsurface.cpp
+    ObjectModels/interactiveobjectitemmodelsurfacehyperofrevol.h
+    ObjectModels/interactiveobjectitemmodelsurfacehyperofrevol.cpp
     ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.h
     ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.cpp
     ObjectModels/interactiveobjectitemmodelsurfaceplane.h
@@ -53,6 +59,8 @@ set(PROJECT_SOURCES
     Objects/interactiveshape.cpp
     Objects/interactivesurface.h
     Objects/interactivesurface.cpp
+    Objects/interactivesurfacehyperofrevol.h
+    Objects/interactivesurfacehyperofrevol.cpp
     Objects/interactivesurfaceparabofrevol.h
     Objects/interactivesurfaceparabofrevol.cpp
     Objects/interactivesurfaceplane.h

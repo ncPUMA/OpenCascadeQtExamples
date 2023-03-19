@@ -19,6 +19,7 @@
 #include "ObjectModels/interactiveobjectitemmodeldelegate.h"
 #include "ObjectModels/objectstreemodel.h"
 #include "Objects/interactiveshape.h"
+#include "Objects/interactivesurfacehyperofrevol.h"
 #include "Objects/interactivesurfaceparabofrevol.h"
 #include "Objects/interactivesurfaceplane.h"
 
@@ -83,6 +84,10 @@ class ViewportPrivate
         addMenu->addAction(Viewport::tr("Parabola of revol"), q_ptr, [this, object, pickedPoint]() {
             auto parab = new InteractiveSurfaceParabOfRevol;
             addToContext(parab, pickedPoint, Viewport::tr("ParabOfRevol"), object);
+        });
+        addMenu->addAction(Viewport::tr("Hyperbola of revol"), q_ptr, [this, object, pickedPoint]() {
+            auto parab = new InteractiveSurfaceHyperOfRevol;
+            addToContext(parab, pickedPoint, Viewport::tr("HyperOfRevol"), object);
         });
         addMenu->addSeparator();
         addMenu->addAction(Viewport::tr("Custom shape..."), q_ptr, [this, object, pickedPoint]() {
