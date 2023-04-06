@@ -17,6 +17,10 @@ set(PROJECT_SOURCES
 
     Editors/dimentionlenghteditor.h
     Editors/dimentionlenghteditor.cpp
+    Editors/interactiveobjectcuboideditor.h
+    Editors/interactiveobjectcuboideditor.cpp
+    Editors/interactiveobjectcylindereditor.h
+    Editors/interactiveobjectcylindereditor.cpp
     Editors/interactiveobjecteditor.h
     Editors/interactiveobjecteditor.cpp
     Editors/interactiveobjecteditorcreator.h
@@ -40,6 +44,10 @@ set(PROJECT_SOURCES
     ObjectModels/interactiveobjectitemmodel.cpp
     ObjectModels/interactiveobjectitemmodelcreator.h
     ObjectModels/interactiveobjectitemmodelcreator.cpp
+    ObjectModels/interactiveobjectitemmodelcuboid.h
+    ObjectModels/interactiveobjectitemmodelcuboid.cpp
+    ObjectModels/interactiveobjectitemmodelcylinder.h
+    ObjectModels/interactiveobjectitemmodelcylinder.cpp
     ObjectModels/interactiveobjectitemmodeldelegate.h
     ObjectModels/interactiveobjectitemmodeldelegate.cpp
     ObjectModels/interactiveobjectitemmodelshape.h
@@ -61,6 +69,10 @@ set(PROJECT_SOURCES
     ObjectModels/objectstreemodel.h
     ObjectModels/objectstreemodel.cpp
 
+    Objects/interactivecuboid.h
+    Objects/interactivecuboid.cpp
+    Objects/interactivecylinder.h
+    Objects/interactivecylinder.cpp
     Objects/interactiveobject.h
     Objects/interactiveobject.cpp
     Objects/interactiveshape.h

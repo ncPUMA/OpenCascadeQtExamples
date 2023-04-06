@@ -57,7 +57,6 @@ void InteractiveSurfaceEllipseOfRevol::setFocal(Standard_Real F)
     if (F > 0.) {
         d->focal = F;
         updateSurface(d->getCurve());
-        notify();
     }
 }
 
@@ -66,7 +65,6 @@ void InteractiveSurfaceEllipseOfRevol::setEccentricity(Standard_Real eps)
     if (eps > 0.) {
         d->eccentricity = eps;
         updateSurface(d->getCurve());
-        notify();
     }
 }
 

@@ -1,5 +1,7 @@
 #include "interactiveobjectitemmodelcreator.h"
 
+#include "interactiveobjectitemmodelcuboid.h"
+#include "interactiveobjectitemmodelcylinder.h"
 #include "interactiveobjectitemmodelshape.h"
 #include "interactiveobjectitemmodelsurfacecircleofrevol.h"
 #include "interactiveobjectitemmodelsurfaceellipseofrevol.h"
@@ -7,6 +9,8 @@
 #include "interactiveobjectitemmodelsurfaceparabofrevol.h"
 #include "interactiveobjectitemmodelsurfaceplane.h"
 
+#include "../Objects/interactivecuboid.h"
+#include "../Objects/interactivecylinder.h"
 #include "../Objects/interactiveshape.h"
 #include "../Objects/interactivesurfacecircleofrevol.h"
 #include "../Objects/interactivesurfaceellipseofrevol.h"
@@ -45,6 +49,16 @@ InteractiveObjectItemModel *InteractiveObjectItemModelCreator::createModel(const
         auto parab = Handle(InteractiveSurfaceParabOfRevol)::DownCast(interactive);
         if (parab) {
             return new InteractiveObjectItemModelSurfaceParabOfRevol(parab);
+        }
+
+        auto cuboid = Handle(InteractiveCuboid)::DownCast(interactive);
+        if (cuboid) {
+            return new InteractiveObjectItemModelCuboid(cuboid);
+        }
+
+        auto cylinder = Handle(InteractiveCylinder)::DownCast(interactive);
+        if (cylinder) {
+            return new InteractiveObjectItemModelCylinder(cylinder);
         }
 
         auto shape = Handle(InteractiveShape)::DownCast(interactive);

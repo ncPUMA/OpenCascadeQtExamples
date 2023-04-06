@@ -39,7 +39,6 @@ void InteractiveSurfaceParabOfRevol::setFocal(Standard_Real F)
     if (F >= 0.) {
         d->focal = F;
         updateSurface(d->getCurve());
-        notify();
     }
 }
 

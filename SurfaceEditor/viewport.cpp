@@ -18,6 +18,8 @@
 #include "ObjectModels/interactiveobjectitemmodelcreator.h"
 #include "ObjectModels/interactiveobjectitemmodeldelegate.h"
 #include "ObjectModels/objectstreemodel.h"
+#include "Objects/interactivecuboid.h"
+#include "Objects/interactivecylinder.h"
 #include "Objects/interactiveshape.h"
 #include "Objects/interactivesurfacecircleofrevol.h"
 #include "Objects/interactivesurfaceellipseofrevol.h"
@@ -98,6 +100,15 @@ class ViewportPrivate
         addMenu->addAction(Viewport::tr("Hyperbola of revol"), q_ptr, [this, object, pickedPoint]() {
             auto parab = new InteractiveSurfaceHyperOfRevol;
             addToContext(parab, pickedPoint, Viewport::tr("HyperOfRevol"), object);
+        });
+        addMenu->addSeparator();
+        addMenu->addAction(Viewport::tr("Cuboid"), q_ptr, [this, object, pickedPoint]() {
+            auto cuboid = new InteractiveCuboid;
+            addToContext(cuboid, pickedPoint, Viewport::tr("Cuboid"), object);
+        });
+        addMenu->addAction(Viewport::tr("Cylinder"), q_ptr, [this, object, pickedPoint]() {
+            auto cylinder = new InteractiveCylinder;
+            addToContext(cylinder, pickedPoint, Viewport::tr("Cylinder"), object);
         });
         addMenu->addSeparator();
         addMenu->addAction(Viewport::tr("Custom shape..."), q_ptr, [this, object, pickedPoint]() {

@@ -36,6 +36,7 @@ public:
 
 protected:
     void notify();
+    void updateShape(const TopoDS_Shape &shape);
 
 private:
     InteractiveObjectPrivate *d;

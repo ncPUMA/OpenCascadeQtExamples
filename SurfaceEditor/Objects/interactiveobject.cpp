@@ -77,3 +77,13 @@ void InteractiveObject::notify()
         observer->changed();
     }
 }
+
+void InteractiveObject::updateShape(const TopoDS_Shape &shape)
+{
+    SetShape(shape);
+    auto ctx = GetContext();
+    if (ctx) {
+        ctx->Redisplay(this, Standard_True, Standard_True);
+    }
+    notify();
+}

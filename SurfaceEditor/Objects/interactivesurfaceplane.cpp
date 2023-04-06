@@ -9,15 +9,11 @@ class InteractiveSurfacePlanePrivate
 {
     friend class InteractiveSurfacePlane;
 
-    void updatePlane() {
+    TopoDS_Shape plane() const {
         gp_Ax3 axes;
         Handle(Geom_Plane) plane = new Geom_Plane(axes);
         BRepBuilderAPI_MakeFace faceMaker(plane, 0., Umax, 0., Vmax, Precision::Confusion());
-        q->SetShape(faceMaker.Face());
-        auto ctx = q->GetContext();
-        if (ctx) {
-            ctx->Redisplay(q, Standard_True, Standard_True);
-        }
+        return faceMaker.Face();
     }
 
     InteractiveSurfacePlane *q;
@@ -32,7 +28,7 @@ InteractiveSurfacePlane::InteractiveSurfacePlane()
     , d(new InteractiveSurfacePlanePrivate)
 {
     d->q = this;
-    d->updatePlane();
+    updateShape(d->plane());
 }
 
 InteractiveSurfacePlane::~InteractiveSurfacePlane()
@@ -54,8 +50,7 @@ void InteractiveSurfacePlane::setUmax(Standard_Real U)
 {
     if (U > 0.) {
         d->Umax = U;
-        d->updatePlane();
-        notify();
+        updateShape(d->plane());
     }
 }
 
@@ -63,7 +58,6 @@ void InteractiveSurfacePlane::setVmax(Standard_Real V)
 {
     if (V > 0.) {
         d->Vmax = V;
-        d->updatePlane();
-        notify();
+        updateShape(d->plane());
     }
 }
