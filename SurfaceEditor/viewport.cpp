@@ -9,6 +9,7 @@
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_Manipulator.hxx>
 #include <AIS_Shape.hxx>
+#include <BRepAlgoAPI_Cut.hxx>
 #include <StdSelect_BRepOwner.hxx>
 #include <V3d_View.hxx>
 
@@ -121,33 +122,8 @@ class ViewportPrivate
         });
 
         if (object) {
-            topMenu.addAction(Viewport::tr("Remove"), q_ptr, [this, object, ctx]() {
-                if (manipulator->IsAttached() && manipulator->Object() == object) {
-                    manipulator->Detach();
-                    ctx->Remove(manipulator, Standard_False);
-                }
-
-                if (editor && editor->Parent() && editor->Parent() == object) {
-                    object->RemoveChild(editor);
-                    ctx->Remove(editor, Standard_True);
-                    editor = nullptr;
-                }
-
-                if (object->Parent()) {
-                    object->Parent()->RemoveChild(object);
-                }
-
-                ctx->Remove(object, Standard_False);
-                if (mObjectsView) {
-                    auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
-                    model->removeObject(object);
-                }
-
-                auto it = objectObservers.find(object);
-                if (it != objectObservers.end()) {
-                    delete it->second;
-                    objectObservers.erase(it);
-                }
+            topMenu.addAction(Viewport::tr("Remove"), q_ptr, [this, object]() {
+                removeFromContext(object);
             });
             topMenu.addSeparator();
             if (!manipulator->IsAttached() || manipulator->Object() != object) {
@@ -191,6 +167,43 @@ class ViewportPrivate
                     }
                 });
             }
+            auto cylinder = Handle(InteractiveCylinder)::DownCast(object);
+            Handle(InteractiveObject) cutted;
+            if (cylinder) {
+                AIS_ListOfInteractive list;
+                ctx->ObjectsInside(list, AIS_KOI_Shape);
+                auto cylTrsf = ctx->Location(cylinder).Transformation();
+                auto cylShape = cylinder->Shape();
+                cylShape.Location(cylTrsf);
+                for (const auto &obj : list) {
+                    if (obj == cylinder) {
+                        continue;
+                    }
+                    auto interactive = Handle(InteractiveObject)::DownCast(obj);
+                    if (!interactive) {
+                        continue;
+                    }
+                    auto intShape = interactive->Shape();
+                    auto intTrsf = ctx->Location(interactive).Transformation();
+                    intShape.Location(intTrsf);
+                    TopoDS_Shape cutShape = BRepAlgoAPI_Cut(intShape, cylShape);
+                    if (cutShape.IsNull()) {
+                        continue;
+                    }
+                    cutShape.Location(intTrsf.Inverted());
+                    topMenu.addSeparator();
+                    topMenu.addAction(Viewport::tr("Cut"), q_ptr, [this, ctx, cylinder, interactive, cutShape, intTrsf]() {
+                        removeFromContext(cylinder);
+                        removeFromContext(interactive);
+                        auto cutted = new InteractiveObject;
+                        cutted->SetShape(cutShape);
+                        addToContext(cutted, gp_XYZ(), Viewport::tr("Cutted"), nullptr);
+                        ctx->SetLocation(cutted, intTrsf);
+                        ctx->Redisplay(cutted, Standard_True);
+                    });
+                    break;
+                }
+            }
         }
 
         if (ctx->IsDisplayed(manipulator)) {
@@ -226,6 +239,39 @@ class ViewportPrivate
             auto observer = new ObjectObserver(q_ptr);
             object->addObserver(*observer);
             objectObservers[object] = observer;
+        }
+    }
+
+    void removeFromContext(const Handle(InteractiveObject) &object) {
+        auto ctx = q_ptr->context();
+        if (!ctx) {
+            return;
+        }
+        if (manipulator->IsAttached() && manipulator->Object() == object) {
+            manipulator->Detach();
+            ctx->Remove(manipulator, Standard_False);
+        }
+
+        if (editor && editor->Parent() && editor->Parent() == object) {
+            object->RemoveChild(editor);
+            ctx->Remove(editor, Standard_True);
+            editor = nullptr;
+        }
+
+        if (object->Parent()) {
+            object->Parent()->RemoveChild(object);
+        }
+
+        ctx->Remove(object, Standard_False);
+        if (mObjectsView) {
+            auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
+            model->removeObject(object);
+        }
+
+        auto it = objectObservers.find(object);
+        if (it != objectObservers.end()) {
+            delete it->second;
+            objectObservers.erase(it);
         }
     }
 
