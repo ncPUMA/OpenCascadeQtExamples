@@ -14,6 +14,8 @@ set(PROJECT_SOURCES
     mainwindow.cpp
     viewport.h
     viewport.cpp
+    coloredshape.h
+    coloredshape.cpp
 )
 
 add_executable(SurfaceColor

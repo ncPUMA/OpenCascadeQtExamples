@@ -1,17 +1,25 @@
 #include "viewport.h"
 
+#include <QDebug>
+
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_Shape.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
 #include <StdSelect_BRepOwner.hxx>
+#include <TopoDS.hxx>
 #include <V3d_View.hxx>
+
+#include <ExamplesBase/ModelLoader/abstractmodelloader.h>
+#include <ExamplesBase/ModelLoader/modelloaderfactorymethod.h>
+
+#include "coloredshape.h"
 
 class ViewportPrivate
 {
     friend class Viewport;
 
     Viewport *q_ptr = nullptr;
-    Handle(AIS_Shape) shape, face;
+    Handle(ColoredShape) shape;
 };
 
 Viewport::Viewport(QWidget *parent)
@@ -20,7 +28,16 @@ Viewport::Viewport(QWidget *parent)
 {
     d_ptr->q_ptr = this;
 
-    d_ptr->shape = new AIS_Shape(BRepPrimAPI_MakeCylinder(100., 50.));
+    Handle(AIS_Trihedron) trihedron;
+    auto path = QStringLiteral("../Models/sample_telescope_mirrors.step");
+    ExamplesBase::ModelLoaderFactoryMethod factory;
+    auto &loader = factory.loaderByFName(path);
+    auto topo_shape = loader.load(path.toLatin1().constData());
+    if (topo_shape.IsNull()) {
+        return;
+    }
+
+    d_ptr->shape = new ColoredShape(topo_shape);
     context()->Display(d_ptr->shape, Standard_False);
     context()->SetDisplayMode(d_ptr->shape, AIS_Shaded, Standard_False);
     gp_Trsf trsf;
@@ -57,19 +74,12 @@ bool Viewport::selectionChanged()
     }
 
     auto owner = Handle(StdSelect_BRepOwner)::DownCast(ctx->SelectedOwner());
-    if (!owner || owner->Shape().IsNull()) {
+    if (!owner || owner->Shape().IsNull() || owner->Shape().ShapeType() != TopAbs_FACE) {
         return false;
     }
 
-    if (d_ptr->face) {
-        ctx->Remove(d_ptr->face, Standard_True);
-    }
-
-    d_ptr->face = new AIS_Shape(owner->Shape());
-    d_ptr->face->SetColor(Quantity_NOC_RED);
-    ctx->Display(d_ptr->face, Standard_False);
-    ctx->SetDisplayMode(d_ptr->face, AIS_Shaded, Standard_False);
-    ctx->SetLocation(d_ptr->face, ctx->Location(d_ptr->shape));
-    ctx->Redisplay(d_ptr->face, Standard_True);
+    d_ptr->shape->resetColors();
+    d_ptr->shape->setFaceColor(TopoDS::Face(owner->Shape()), Quantity_NOC_RED);
+    ctx->RecomputePrsOnly(d_ptr->shape, Standard_True);
     return true;
 }
