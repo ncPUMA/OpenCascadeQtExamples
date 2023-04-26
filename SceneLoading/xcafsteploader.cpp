@@ -14,6 +14,7 @@
 #include <TDF_ChildIterator.hxx>
 #include <TDF_Tool.hxx>
 #include <TDocStd_Document.hxx>
+#include <TopExp_Explorer.hxx>
 #include <XCAFDoc_Location.hxx>
 #include <XCAFDoc_Color.hxx>
 #include <XCAFDoc_ColorTool.hxx>
@@ -25,6 +26,47 @@
 class XCafStepLoaderPrivate
 {
     friend class XCafStepLoader;
+
+    struct InternalData
+    {
+        Handle(AIS_InteractiveObject) parent;
+        TCollection_ExtendedString name;
+        TopoDS_Shape shape;
+        TopLoc_Location location;
+        Standard_Boolean hasColors[XCAFDoc_ColorCurv + 1];
+        Quantity_ColorRGBA colors[XCAFDoc_ColorCurv + 1];
+    };
+
+    void addShape(const InternalData &data, Handle(AIS_Shape) &object) {
+        if (data.shape.ShapeType() == TopAbs_COMPOUND) {
+            for (TopExp_Explorer anExp(data.shape, TopAbs_SOLID); anExp.More(); anExp.Next()) {
+                InternalData chData = data;
+                chData.name.Clear();
+                chData.shape = anExp.Current();
+                chData.parent = object;
+                Handle(AIS_Shape) chObj = new AIS_Shape(TopoDS_Shape());
+                auto drawer = chObj->Attributes();
+                auto shAspect = drawer->ShadingAspect();
+                auto fbAspect = drawer->FaceBoundaryAspect();
+                if (chData.hasColors[XCAFDoc_ColorGen]) {
+                    shAspect->SetColor(data.colors[XCAFDoc_ColorGen].GetRGB());
+                    fbAspect->SetColor(data.colors[XCAFDoc_ColorGen].GetRGB());
+                }
+                if (chData.hasColors[XCAFDoc_ColorSurf]) {
+                    shAspect->SetColor(data.colors[XCAFDoc_ColorSurf].GetRGB());
+                }
+                if (chData.hasColors[XCAFDoc_ColorCurv]) {
+                    fbAspect->SetColor(data.colors[XCAFDoc_ColorCurv].GetRGB());
+                }
+
+                object->AddChild(chObj);
+                addShape(chData, chObj);
+                objects.Bind(chObj, chData);
+            }
+        } else {
+            object->SetShape(data.shape);
+        }
+    }
 
     void addShape(const TDF_Label &label, Handle(AIS_InteractiveObject) parent = nullptr) {
         TDF_Label origLabel;
@@ -79,7 +121,7 @@ class XCafStepLoaderPrivate
             }
         }
 
-        Handle(AIS_Shape) obj = new AIS_Shape(data.shape);
+        Handle(AIS_Shape) obj = new AIS_Shape(TopoDS_Shape());
         auto drawer = obj->Attributes();
         auto shAspect = drawer->ShadingAspect();
         auto fbAspect = drawer->FaceBoundaryAspect();
@@ -104,20 +146,10 @@ class XCafStepLoaderPrivate
                 addShape(it.Value(), obj);
             }
         } else {
-            obj->SetShape(data.shape);
+            addShape(data, obj);
         }
         objects.Bind(obj, data);
     }
-
-    struct InternalData
-    {
-        Handle(AIS_InteractiveObject) parent;
-        TCollection_ExtendedString name;
-        TopoDS_Shape shape;
-        TopLoc_Location location;
-        Standard_Boolean hasColors[XCAFDoc_ColorCurv + 1];
-        Quantity_ColorRGBA colors[XCAFDoc_ColorCurv + 1];
-    };
 
     Handle(TDocStd_Document) document;
     Handle(XCAFDoc_ShapeTool) shapeTool;

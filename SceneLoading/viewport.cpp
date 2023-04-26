@@ -19,6 +19,9 @@ class ViewportPrivate
                           Handle(AIS_InteractiveContext) &ctx,
                           QStandardItem *parent = nullptr) {
         auto name = QString::fromStdU16String(loader.name(obj).ToExtString());
+        if (name.isEmpty()) {
+            name = Viewport::tr("Shape %1").arg(++unnamedNo);
+        }
         auto item = new QStandardItem(name);
         item->setData(QVariant::fromValue(static_cast<void *>(obj.get())));
         if (parent) {
@@ -37,6 +40,7 @@ class ViewportPrivate
 
     void load(const QString &fileName, Handle(AIS_InteractiveContext) &ctx) {
         objectsModel->clear();
+        unnamedNo = 0;
         objectsModel->setHorizontalHeaderItem(0, new QStandardItem(Viewport::tr("Name")));
         XCafStepLoader loader;
         if (!loader.loadStep(fileName.toLocal8Bit().constData())) {
@@ -65,6 +69,7 @@ class ViewportPrivate
 
     QTreeView *objectsView = nullptr;
     QStandardItemModel *objectsModel = nullptr;
+    int unnamedNo = 0;
 };
 
 Viewport::Viewport(QWidget *parent)
