@@ -30,5 +30,6 @@ add_subdirectory(ModelLoader)
 add_subdirectory(SurfaceEditor)
 add_subdirectory(SurfaceColor)
 add_subdirectory(SceneLoading)
+add_subdirectory(Arrows)
 
 file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Models")
