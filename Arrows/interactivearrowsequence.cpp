@@ -131,7 +131,7 @@ void InteractiveArrowSequence::Compute(const Handle(PrsMgr_PresentationManager) 
             break;
     }
     for (; it != end; ++it) {
-        auto pair = *it;
+        const auto &pair = *it;
         auto axisLenght = pair.first.Distance(pair.second);
         Handle(Graphic3d_ArrayOfPrimitives) arrow =
                 Prs3d_Arrow::DrawShaded(gp_Ax1(pair.first, gp_Vec(pair.first, pair.second)),

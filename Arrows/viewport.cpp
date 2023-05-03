@@ -121,7 +121,7 @@ bool Viewport::mouseReleased(QMouseEvent *event)
             d_ptr->drawDemo(context());
         });
         topMenu.addSeparator();
-        topMenu.addAction(tr("Draw 1M lines with arrows as one object"), this, [this]() {
+        topMenu.addAction(tr("Draw 100K lines with arrows as one object"), this, [this]() {
             d_ptr->removeArrows(context());
             d_ptr->drawWithArrows(context(), 100000);
             d_ptr->tm.restart();
