@@ -14,6 +14,9 @@ public:
 
     void setObjectsView(QTreeView *objectsView);
 
+protected:
+    bool mouseReleased(QMouseEvent *event) final;
+
 private:
     ViewportPrivate *const d_ptr;
 };

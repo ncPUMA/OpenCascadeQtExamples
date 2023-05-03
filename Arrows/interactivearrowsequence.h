@@ -18,6 +18,14 @@ public:
         DM_Default = 0,
     };
 
+    enum ArrowMode
+    {
+        AM_Disable,
+        AM_DrawAll,
+        AM_DrawLast,
+        AM_DrawFirst,
+    };
+
     InteractiveArrowSequence();
     ~InteractiveArrowSequence();
 
@@ -26,6 +34,11 @@ public:
     void setPoints(const std::vector<std::pair<gp_Pnt, gp_Pnt> > &points);
     void setLineType(Aspect_TypeOfLine type);
     void setLineWidh(Standard_Real width);
+    void setArrowRadius(Standard_Real radius);
+    void setArrowLenght(Standard_Real lenght);
+    //! Sets the arrow position on line (from 0. to 1.) in percent
+    void setArrowPosition(Standard_Real pos);
+    void setArrowMode(InteractiveArrowSequence::ArrowMode mode);
 
     void ComputeSelection(const Handle(SelectMgr_Selection) &,
                           const Standard_Integer) Standard_OVERRIDE { }
