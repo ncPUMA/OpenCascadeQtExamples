@@ -97,12 +97,13 @@ void InteractiveArrowSequence::Compute(const Handle(PrsMgr_PresentationManager) 
 
     Handle(Graphic3d_Group) lineGroup = prs->NewGroup();
     lineGroup->SetGroupPrimitivesAspect(groupAspect);
+    Handle(Graphic3d_ArrayOfPrimitives) line =
+            new Graphic3d_ArrayOfSegments(static_cast<Standard_Integer>(d->points.size()) * 2.);
     for (const auto &pair : d->points) {
-        Handle(Graphic3d_ArrayOfPrimitives) line = new Graphic3d_ArrayOfSegments(2);
         line->AddVertex(pair.first);
         line->AddVertex(pair.second);
-        lineGroup->AddPrimitiveArray(line);
     }
+    lineGroup->AddPrimitiveArray(line);
 
     auto datumAspect = myDrawer->DatumAspect();
     auto nbOfFacettes = static_cast<Standard_Integer>(datumAspect->Attribute(Prs3d_DP_ShadingNumberOfFacettes));

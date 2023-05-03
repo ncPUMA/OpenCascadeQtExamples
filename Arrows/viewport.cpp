@@ -130,9 +130,9 @@ bool Viewport::mouseReleased(QMouseEvent *event)
                 fitInView();
             }, Qt::QueuedConnection);
         });
-        topMenu.addAction(tr("Draw 1M lines without arrows as one object"), this, [this]() {
+        topMenu.addAction(tr("Draw 10M lines without arrows as one object"), this, [this]() {
             d_ptr->removeArrows(context());
-            d_ptr->drawWithoutArrows(context(), 1000000);
+            d_ptr->drawWithoutArrows(context(), 10000000);
             d_ptr->tm.restart();
             QMetaObject::invokeMethod(this, [this](){
                 qDebug() << "Render finish" << QString::number(d_ptr->tm.restart() / 1000., 'f') << "s.";
