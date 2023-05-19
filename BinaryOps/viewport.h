@@ -1,17 +1,15 @@
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
-#include <ExamplesBase/Viewport/viewport.h>
+#include <ExamplesBase/Viewport/interactiveobjectsviewport.h>
 
 class ViewportPrivate;
 
-class Viewport : public ExamplesBase::Viewport
+class Viewport : public ExamplesBase::InteractiveObjectsViewport
 {
 public:
-    Viewport(QWidget *parent);
+    Viewport();
     ~Viewport();
-
-    void objectsChanged();
 
 private:
     ViewportPrivate *const d_ptr;

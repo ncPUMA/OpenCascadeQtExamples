@@ -5,8 +5,8 @@ class ViewportPrivate
     friend class Viewport;
 };
 
-Viewport::Viewport(QWidget *parent)
-    : ExamplesBase::Viewport(parent)
+Viewport::Viewport()
+    : ExamplesBase::InteractiveObjectsViewport()
     , d_ptr(new ViewportPrivate)
 {
 
@@ -15,9 +15,4 @@ Viewport::Viewport(QWidget *parent)
 Viewport::~Viewport()
 {
     delete d_ptr;
-}
-
-void Viewport::objectsChanged()
-{
-
 }

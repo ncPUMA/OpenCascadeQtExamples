@@ -25,18 +25,10 @@ Viewport::Viewport()
 
 }
 
-void Viewport::objectsViewChanged(QAbstractItemView *objectsView)
+void Viewport::objectsViewMenuRequest(const Handle(AIS_InteractiveObject) &obj, QMenu &menu)
 {
-    connect(objectsView, &QAbstractItemView::customContextMenuRequested,
-            this, [this, objectsView](const QPoint &point) {
-        auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(objectsView->model());
-        auto index = objectsView->indexAt(point);
-        if (menuRequest(objectsView->mapToGlobal(point),
-                        gp_XYZ(),
-                        model->object(index))) {
-            view()->Redraw();
-        }
-    });
+    auto interactive = Handle(ExamplesBase::InteractiveObject)::DownCast(obj);
+    menuRequest(interactive, gp_XYZ(), menu);
 }
 
 bool Viewport::mouseReleased(QMouseEvent *event)
@@ -65,17 +57,18 @@ bool Viewport::mouseReleased(QMouseEvent *event)
         }
 
         gp_XYZ translation(pickedPoint.x(), pickedPoint.y(), pickedPoint.z());
-        return menuRequest(event->globalPos(), translation, object);
+        QMenu menu;
+        menuRequest(object, translation, menu);
+        return menu.exec(event->globalPos()) != nullptr;
     }
     return false;
 }
 
-bool Viewport::menuRequest(const QPoint &menuPos,
+void Viewport::menuRequest(const Handle(ExamplesBase::InteractiveObject) &object,
                            const gp_XYZ &pickedPoint,
-                           const Handle(ExamplesBase::InteractiveObject) &object)
+                           QMenu &menu)
 {
-    QMenu topMenu;
-    auto addMenu = topMenu.addMenu(Viewport::tr("Add"));
+    auto addMenu = menu.addMenu(Viewport::tr("Add"));
     addMenu->addAction(Viewport::tr("Plane"), this, [this, object, pickedPoint]() {
         auto plane = new ExamplesBase::InteractiveSurfacePlane;
         addToContext(plane, pickedPoint, Viewport::tr("Plane"), object);
@@ -116,17 +109,17 @@ bool Viewport::menuRequest(const QPoint &menuPos,
     });
 
     if (object) {
-        topMenu.addAction(Viewport::tr("Remove"), this, [this, object]() {
+        menu.addAction(Viewport::tr("Remove"), this, [this, object]() {
             removeFromContext(object);
         });
-        topMenu.addSeparator();
+        menu.addSeparator();
         if (manipulatorAttachedObject() != object) {
-            topMenu.addAction(Viewport::tr("Transform"), this, [this, object]() {
+            menu.addAction(Viewport::tr("Transform"), this, [this, object]() {
                 showManipulator(object);
             });
         }
         if (editorAttachedObject() != object) {
-            topMenu.addAction(Viewport::tr("Edit"), this, [this, object]() {
+            menu.addAction(Viewport::tr("Edit"), this, [this, object]() {
                 showEditor(object);
             });
         }
@@ -155,8 +148,8 @@ bool Viewport::menuRequest(const QPoint &menuPos,
                     continue;
                 }
                 cutShape.Location(intTrsf.Inverted());
-                topMenu.addSeparator();
-                topMenu.addAction(Viewport::tr("Cut"), this, [this, cylinder, interactive, cutShape, intTrsf]() {
+                menu.addSeparator();
+                menu.addAction(Viewport::tr("Cut"), this, [this, cylinder, interactive, cutShape, intTrsf]() {
                     removeFromContext(cylinder);
                     removeFromContext(interactive);
                     auto cutted = new ExamplesBase::InteractiveObject;
@@ -171,14 +164,13 @@ bool Viewport::menuRequest(const QPoint &menuPos,
     }
 
     if (manipulatorAttachedObject()) {
-        topMenu.addAction(Viewport::tr("End transform"), this, [this]() {
+        menu.addAction(Viewport::tr("End transform"), this, [this]() {
             removeManipulator();
         });
     }
     if (editorAttachedObject()) {
-        topMenu.addAction(Viewport::tr("End edit"), this, [this]() {
+        menu.addAction(Viewport::tr("End edit"), this, [this]() {
             removeEditor();
         });
     }
-    return topMenu.exec(menuPos) != nullptr;
 }

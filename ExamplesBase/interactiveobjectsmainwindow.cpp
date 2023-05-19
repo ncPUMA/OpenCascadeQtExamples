@@ -1,10 +1,12 @@
-#include "mainwindow.h"
+#include "interactiveobjectsmainwindow.h"
 
 #include <QDockWidget>
 #include <QLabel>
 #include <QTreeView>
 
-#include "viewport.h"
+#include "Viewport/interactiveobjectsviewport.h"
+
+namespace ExamplesBase {
 
 class PlaceholderView : public QTreeView
 {
@@ -66,37 +68,44 @@ public:
     }
 };
 
-class MainWindowPrivate
+class InteractiveObjectsMainWindowPrivate
 {
-    friend class MainWindow;
+    friend class InteractiveObjectsMainWindow;
 
-    Viewport *mViewport = nullptr;
+    InteractiveObjectsViewport *mViewport = nullptr;
+    ObjectsTree *mObjectsTree;
+    PlaceholderView *mPropertyView;
 };
 
-MainWindow::MainWindow(QWidget *parent)
+InteractiveObjectsMainWindow::InteractiveObjectsMainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , d_ptr(new MainWindowPrivate)
+    , d_ptr(new InteractiveObjectsMainWindowPrivate)
 {
-    d_ptr->mViewport = new Viewport(this);
-    setCentralWidget(d_ptr->mViewport);
-    d_ptr->mViewport->fitInView();
-
     QDockWidget *dockObjects = new QDockWidget(tr("Interactive objects"), this);
     dockObjects->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
-    auto objectsView = new ObjectsTree(tr("No objects"), dockObjects);
-    dockObjects->setWidget(objectsView);
+    d_ptr->mObjectsTree = new ObjectsTree(tr("No objects"), dockObjects);
+    dockObjects->setWidget(d_ptr->mObjectsTree);
     addDockWidget(Qt::RightDockWidgetArea, dockObjects);
-    d_ptr->mViewport->setObjectsView(objectsView);
 
-    QDockWidget *dockProperty = new QDockWidget(tr("Surface property"), this);
+    QDockWidget *dockProperty = new QDockWidget(tr("Object property"), this);
     dockProperty->setFeatures(QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
-    auto propertyView = new PlaceholderView(tr("Choose object"), dockProperty);
-    dockProperty->setWidget(propertyView);
+    d_ptr->mPropertyView = new PlaceholderView(tr("Choose object"), dockProperty);
+    dockProperty->setWidget(d_ptr->mPropertyView);
     addDockWidget(Qt::RightDockWidgetArea, dockProperty);
-    d_ptr->mViewport->setPropertyView(propertyView);
 }
 
-MainWindow::~MainWindow()
+InteractiveObjectsMainWindow::~InteractiveObjectsMainWindow()
 {
     delete d_ptr;
+}
+
+void InteractiveObjectsMainWindow::setViewport(InteractiveObjectsViewport *viewport)
+{
+    viewport->setObjectsView(d_ptr->mObjectsTree);
+    viewport->setPropertyView(d_ptr->mPropertyView);
+
+    setCentralWidget(viewport);
+    d_ptr->mViewport = viewport;
+}
+
 }

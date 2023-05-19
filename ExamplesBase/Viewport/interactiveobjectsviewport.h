@@ -4,6 +4,7 @@
 #include "viewport.h"
 
 class QAbstractItemView;
+class QMenu;
 class gp_XYZ;
 class AIS_InteractiveObject;
 
@@ -35,7 +36,7 @@ public:
     void removeFromContext(const Handle(AIS_InteractiveObject) &object);
 
 protected:
-    virtual void objectsViewChanged(QAbstractItemView *objectsView);
+    virtual void objectsViewMenuRequest(const Handle(AIS_InteractiveObject) &obj, QMenu &menu);
     bool selectionChanged() override;
 
 private:

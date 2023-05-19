@@ -9,13 +9,13 @@ public:
     Viewport();
 
 protected:
-    void objectsViewChanged(QAbstractItemView *objectsView) final;
+    void objectsViewMenuRequest(const Handle(AIS_InteractiveObject) &obj, QMenu &menu);
     bool mouseReleased(QMouseEvent *event) final;
 
 private:
-    bool menuRequest(const QPoint &menuPos,
+    void menuRequest(const Handle(ExamplesBase::InteractiveObject) &object,
                      const gp_XYZ &pickedPoint,
-                     const Handle(ExamplesBase::InteractiveObject) &object);
+                     QMenu &menu);
 };
 
 #endif // VIEWPORT_H

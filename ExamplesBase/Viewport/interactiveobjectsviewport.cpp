@@ -1,9 +1,7 @@
 #include "interactiveobjectsviewport.h"
 
 #include <QAbstractItemView>
-#include <QDebug>
 #include <QMenu>
-#include <QMouseEvent>
 #include <QTimer>
 
 #include <AIS_InteractiveContext.hxx>
@@ -355,7 +353,16 @@ void InteractiveObjectsViewport::setObjectsView(QAbstractItemView *objectsView)
         }
     });
 
-    objectsViewChanged(d_ptr->mObjectsView);
+    connect(objectsView, &QAbstractItemView::customContextMenuRequested,
+            this, [this, objectsView](const QPoint &point) {
+        auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(objectsView->model());
+        auto index = objectsView->indexAt(point);
+        QMenu menu;
+        objectsViewMenuRequest(model->object(index), menu);
+        if (menu.exec(objectsView->mapToGlobal(point)) != nullptr) {
+            view()->Redraw();
+        }
+    });
 }
 
 void InteractiveObjectsViewport::setPropertyView(QAbstractItemView *propertyView)
@@ -404,14 +411,15 @@ void InteractiveObjectsViewport::showEditor(const Handle(InteractiveObject) &obj
     d_ptr->showEditor(object);
 }
 
-void ExamplesBase::InteractiveObjectsViewport::removeEditor()
+void InteractiveObjectsViewport::removeEditor()
 {
     d_ptr->removeEditor();
 }
 
-void ExamplesBase::InteractiveObjectsViewport::objectsViewChanged(QAbstractItemView *objectsView)
+void InteractiveObjectsViewport::objectsViewMenuRequest(const Handle(AIS_InteractiveObject) &obj, QMenu &menu)
 {
-    Q_UNUSED(objectsView);
+    Q_UNUSED(obj);
+    Q_UNUSED(menu);
 }
 
 void InteractiveObjectsViewport::addToContext(const Handle(InteractiveObject) &object, const gp_XYZ &translation,
