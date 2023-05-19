@@ -1,6 +1,7 @@
 #include "interactiveobjectsurfacecircleofrevoleditor.h"
 
 #include <AIS_InteractiveContext.hxx>
+#include <AIS_Point.hxx>
 #include <AIS_TextLabel.hxx>
 #include <Geom_CartesianPoint.hxx>
 #include <Geom_Circle.hxx>
@@ -9,7 +10,6 @@
 #include "../Objects/interactivesurfacecircleofrevol.h"
 
 #include "dimentionlenghteditor.h"
-#include "point.h"
 
 namespace ExamplesBase {
 
@@ -44,7 +44,7 @@ InteractiveObjectSurfaceCircleOfRevolEditor::InteractiveObjectSurfaceCircleOfRev
 {
     d->surface = surface;
 
-    d->pointF = new Point;
+    d->pointF = new AIS_Point(new Geom_CartesianPoint(gp_Pnt()));
     AddChild(d->pointF);
     d->labelF = new AIS_TextLabel;
     d->labelF->SetText("R");

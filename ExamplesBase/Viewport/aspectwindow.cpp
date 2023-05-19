@@ -92,7 +92,6 @@ AspectWindow::AspectWindow(QWidget *view) :
 
 AspectWindow::~AspectWindow()
 {
-
     delete d_ptr;
 }
 

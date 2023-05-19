@@ -1,31 +1,21 @@
 #ifndef VIEWPORT_H
 #define VIEWPORT_H
 
-#include <ExamplesBase/Viewport/viewport.h>
+#include <ExamplesBase/Viewport/interactiveobjectsviewport.h>
 
-class QAbstractItemView;
-class InteractiveObject;
-class ViewportPrivate;
-
-class Viewport : public ExamplesBase::Viewport
+class Viewport : public ExamplesBase::InteractiveObjectsViewport
 {
 public:
-    Viewport(QWidget *parent);
-    ~Viewport();
-
-    void setObjectsView(QAbstractItemView *objectsView);
-    void setPropertyView(QAbstractItemView *propertyView);
-
-    void objectsChanged();
+    Viewport();
 
 protected:
-    bool selectionChanged() final;
+    void objectsViewChanged(QAbstractItemView *objectsView) final;
     bool mouseReleased(QMouseEvent *event) final;
 
 private:
-    ViewportPrivate *const d_ptr;
-
-    friend class ViewportPrivate;
+    bool menuRequest(const QPoint &menuPos,
+                     const gp_XYZ &pickedPoint,
+                     const Handle(ExamplesBase::InteractiveObject) &object);
 };
 
 #endif // VIEWPORT_H

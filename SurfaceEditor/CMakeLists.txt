@@ -10,8 +10,6 @@ set(PROJECT_H
 
 set(PROJECT_SOURCES
     main.cpp
-    mainwindow.h
-    mainwindow.cpp
     viewport.h
     viewport.cpp
 )

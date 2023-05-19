@@ -15,6 +15,9 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core REQUIRED)
 add_library(ExamplesBase SHARED
   ExamplesBase_global.h
 
+  interactiveobjectsmainwindow.cpp
+  interactiveobjectsmainwindow.h
+
   InteractiveObjects/interactivecurve.cpp
   InteractiveObjects/interactivecurve.h
   InteractiveObjects/interactivenormal.cpp
@@ -43,6 +46,8 @@ add_library(ExamplesBase SHARED
 
   Viewport/aspectwindow.cpp
   Viewport/aspectwindow.h
+  Viewport/interactiveobjectsviewport.cpp
+  Viewport/interactiveobjectsviewport.h
   Viewport/viewport.cpp
   Viewport/viewport.h
 
@@ -68,8 +73,6 @@ add_library(ExamplesBase SHARED
   Editors/interactiveobjectsurfaceplaneeditor.cpp
   Editors/manipulatoreditor.h
   Editors/manipulatoreditor.cpp
-  Editors/point.h
-  Editors/point.cpp
 
   ObjectModels/interactiveobjectitemmodel.h
   ObjectModels/interactiveobjectitemmodel.cpp
