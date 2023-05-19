@@ -11,6 +11,14 @@ public:
     Viewport();
     ~Viewport();
 
+protected:
+    bool mouseReleased(QMouseEvent *event) final;
+
+private:
+    void menuRequest(const Handle(AIS_Shape) &object,
+                     const gp_XYZ &pickedPoint,
+                     QMenu &menu);
+
 private:
     ViewportPrivate *const d_ptr;
 };

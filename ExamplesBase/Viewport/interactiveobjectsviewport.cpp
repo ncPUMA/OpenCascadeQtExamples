@@ -67,7 +67,7 @@ class InteractiveObjectsViewportPrivate
 {
     friend class InteractiveObjectsViewport;
 
-    void addToContext(const Handle(InteractiveObject) &object, const gp_XYZ &translation,
+    void addToContext(const Handle(AIS_InteractiveObject) &object, const gp_XYZ &translation,
                       const QString &name, const Handle(AIS_InteractiveObject) &parent)
     {
         if (parent) {
@@ -78,14 +78,17 @@ class InteractiveObjectsViewportPrivate
         gp_Trsf trsf;
         trsf.SetTranslation(translation);
         ctx->SetLocation(object, trsf);
-        object->setName(QString("%1_%2").arg(name).arg(++objectCounter));
-        if (mObjectsView) {
-            auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(mObjectsView->model());
-            model->addObject(object);
+        auto interactive = Handle(InteractiveObject)::DownCast(object);
+        if (interactive) {
+            interactive->setName(QString("%1_%2").arg(name).arg(++objectCounter));
+            if (mObjectsView) {
+                auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(mObjectsView->model());
+                model->addObject(interactive);
+            }
+            auto observer = new ObjectObserver(q_ptr);
+            interactive->addObserver(*observer);
+            objectObservers[interactive] = observer;
         }
-        auto observer = new ObjectObserver(q_ptr);
-        object->addObserver(*observer);
-        objectObservers[object] = observer;
     }
 
     void removeFromContext(const Handle(AIS_InteractiveObject) &object) {
@@ -422,7 +425,7 @@ void InteractiveObjectsViewport::objectsViewMenuRequest(const Handle(AIS_Interac
     Q_UNUSED(menu);
 }
 
-void InteractiveObjectsViewport::addToContext(const Handle(InteractiveObject) &object, const gp_XYZ &translation,
+void InteractiveObjectsViewport::addToContext(const Handle(AIS_InteractiveObject) &object, const gp_XYZ &translation,
                                               const QString &name, const Handle(AIS_InteractiveObject) &parent)
 {
     d_ptr->addToContext(object, translation, name, parent);

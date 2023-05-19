@@ -31,7 +31,7 @@ public:
     void showEditor(const Handle(InteractiveObject) &object);
     void removeEditor();
 
-    void addToContext(const Handle(InteractiveObject) &object, const gp_XYZ &translation,
+    void addToContext(const Handle(AIS_InteractiveObject) &object, const gp_XYZ &translation,
                       const QString &name, const Handle(AIS_InteractiveObject) &parent);
     void removeFromContext(const Handle(AIS_InteractiveObject) &object);
 
