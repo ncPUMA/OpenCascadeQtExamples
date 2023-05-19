@@ -45,6 +45,83 @@ add_library(ExamplesBase SHARED
   Viewport/aspectwindow.h
   Viewport/viewport.cpp
   Viewport/viewport.h
+
+  Editors/dimentionlenghteditor.h
+  Editors/dimentionlenghteditor.cpp
+  Editors/interactiveobjectcuboideditor.h
+  Editors/interactiveobjectcuboideditor.cpp
+  Editors/interactiveobjectcylindereditor.h
+  Editors/interactiveobjectcylindereditor.cpp
+  Editors/interactiveobjecteditor.h
+  Editors/interactiveobjecteditor.cpp
+  Editors/interactiveobjecteditorcreator.h
+  Editors/interactiveobjecteditorcreator.cpp
+  Editors/interactiveobjectsurfacecircleofrevoleditor.h
+  Editors/interactiveobjectsurfacecircleofrevoleditor.cpp
+  Editors/interactiveobjectsurfaceellipseofrevoleditor.h
+  Editors/interactiveobjectsurfaceellipseofrevoleditor.cpp
+  Editors/interactiveobjectsurfacehyperofrevoleditor.h
+  Editors/interactiveobjectsurfacehyperofrevoleditor.cpp
+  Editors/interactiveobjectsurfaceparabofrevoleditor.h
+  Editors/interactiveobjectsurfaceparabofrevoleditor.cpp
+  Editors/interactiveobjectsurfaceplaneeditor.h
+  Editors/interactiveobjectsurfaceplaneeditor.cpp
+  Editors/manipulatoreditor.h
+  Editors/manipulatoreditor.cpp
+  Editors/point.h
+  Editors/point.cpp
+
+  ObjectModels/interactiveobjectitemmodel.h
+  ObjectModels/interactiveobjectitemmodel.cpp
+  ObjectModels/interactiveobjectitemmodelcreator.h
+  ObjectModels/interactiveobjectitemmodelcreator.cpp
+  ObjectModels/interactiveobjectitemmodelcuboid.h
+  ObjectModels/interactiveobjectitemmodelcuboid.cpp
+  ObjectModels/interactiveobjectitemmodelcylinder.h
+  ObjectModels/interactiveobjectitemmodelcylinder.cpp
+  ObjectModels/interactiveobjectitemmodeldelegate.h
+  ObjectModels/interactiveobjectitemmodeldelegate.cpp
+  ObjectModels/interactiveobjectitemmodelshape.h
+  ObjectModels/interactiveobjectitemmodelshape.cpp
+  ObjectModels/interactiveobjectitemmodelsurface.h
+  ObjectModels/interactiveobjectitemmodelsurface.cpp
+  ObjectModels/interactiveobjectitemmodelsurfacecircleofrevol.h
+  ObjectModels/interactiveobjectitemmodelsurfacecircleofrevol.cpp
+  ObjectModels/interactiveobjectitemmodelsurfaceellipseofrevol.h
+  ObjectModels/interactiveobjectitemmodelsurfaceellipseofrevol.cpp
+  ObjectModels/interactiveobjectitemmodelsurfacehyperofrevol.h
+  ObjectModels/interactiveobjectitemmodelsurfacehyperofrevol.cpp
+  ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.h
+  ObjectModels/interactiveobjectitemmodelsurfaceparabofrevol.cpp
+  ObjectModels/interactiveobjectitemmodelsurfaceplane.h
+  ObjectModels/interactiveobjectitemmodelsurfaceplane.cpp
+  ObjectModels/interactiveobjectitemmodelsurfacerevolution.h
+  ObjectModels/interactiveobjectitemmodelsurfacerevolution.cpp
+  ObjectModels/objectstreemodel.h
+  ObjectModels/objectstreemodel.cpp
+
+  Objects/interactivecuboid.h
+  Objects/interactivecuboid.cpp
+  Objects/interactivecylinder.h
+  Objects/interactivecylinder.cpp
+  Objects/interactiveobject.h
+  Objects/interactiveobject.cpp
+  Objects/interactiveshape.h
+  Objects/interactiveshape.cpp
+  Objects/interactivesurface.h
+  Objects/interactivesurface.cpp
+  Objects/interactivesurfacecircleofrevol.h
+  Objects/interactivesurfacecircleofrevol.cpp
+  Objects/interactivesurfaceellipseofrevol.h
+  Objects/interactivesurfaceellipseofrevol.cpp
+  Objects/interactivesurfacehyperofrevol.h
+  Objects/interactivesurfacehyperofrevol.cpp
+  Objects/interactivesurfaceparabofrevol.h
+  Objects/interactivesurfaceparabofrevol.cpp
+  Objects/interactivesurfaceplane.h
+  Objects/interactivesurfaceplane.cpp
+  Objects/interactivesurfacerevolution.h
+  Objects/interactivesurfacerevolution.cpp
 )
 
 target_link_libraries(ExamplesBase PRIVATE Qt5::Widgets)

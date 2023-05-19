@@ -13,22 +13,22 @@
 #include <StdSelect_BRepOwner.hxx>
 #include <V3d_View.hxx>
 
-#include "Editors/interactiveobjecteditor.h"
-#include "Editors/interactiveobjecteditorcreator.h"
-#include "ObjectModels/interactiveobjectitemmodelshape.h"
-#include "ObjectModels/interactiveobjectitemmodelcreator.h"
-#include "ObjectModels/interactiveobjectitemmodeldelegate.h"
-#include "ObjectModels/objectstreemodel.h"
-#include "Objects/interactivecuboid.h"
-#include "Objects/interactivecylinder.h"
-#include "Objects/interactiveshape.h"
-#include "Objects/interactivesurfacecircleofrevol.h"
-#include "Objects/interactivesurfaceellipseofrevol.h"
-#include "Objects/interactivesurfacehyperofrevol.h"
-#include "Objects/interactivesurfaceparabofrevol.h"
-#include "Objects/interactivesurfaceplane.h"
+#include <ExamplesBase/Editors/interactiveobjecteditor.h>
+#include <ExamplesBase/Editors/interactiveobjecteditorcreator.h>
+#include <ExamplesBase/ObjectModels/interactiveobjectitemmodelshape.h>
+#include <ExamplesBase/ObjectModels/interactiveobjectitemmodelcreator.h>
+#include <ExamplesBase/ObjectModels/interactiveobjectitemmodeldelegate.h>
+#include <ExamplesBase/ObjectModels/objectstreemodel.h>
+#include <ExamplesBase/Objects/interactivecuboid.h>
+#include <ExamplesBase/Objects/interactivecylinder.h>
+#include <ExamplesBase/Objects/interactiveshape.h>
+#include <ExamplesBase/Objects/interactivesurfacecircleofrevol.h>
+#include <ExamplesBase/Objects/interactivesurfaceellipseofrevol.h>
+#include <ExamplesBase/Objects/interactivesurfacehyperofrevol.h>
+#include <ExamplesBase/Objects/interactivesurfaceparabofrevol.h>
+#include <ExamplesBase/Objects/interactivesurfaceplane.h>
 
-class ObjectObserver : public InteractiveObjectObserver
+class ObjectObserver : public ExamplesBase::InteractiveObjectObserver
 {
 public:
     ObjectObserver(Viewport *viewport)
@@ -74,7 +74,7 @@ class ViewportPrivate
     friend class Viewport;
     friend class ObjectObserver;
 
-    bool menuRequest(const QPoint &menuPos, const gp_XYZ &pickedPoint, const Handle(InteractiveObject) &object) {
+    bool menuRequest(const QPoint &menuPos, const gp_XYZ &pickedPoint, const Handle(ExamplesBase::InteractiveObject) &object) {
         auto ctx = q_ptr->context();
         if (!ctx) {
             return false;
@@ -83,39 +83,39 @@ class ViewportPrivate
         QMenu topMenu;
         auto addMenu = topMenu.addMenu(Viewport::tr("Add"));
         addMenu->addAction(Viewport::tr("Plane"), q_ptr, [this, object, pickedPoint]() {
-            auto plane = new InteractiveSurfacePlane;
+            auto plane = new ExamplesBase::InteractiveSurfacePlane;
             addToContext(plane, pickedPoint, Viewport::tr("Plane"), object);
         });
         addMenu->addAction(Viewport::tr("Circle of revol"), q_ptr, [this, object, pickedPoint]() {
-            auto parab = new InteractiveSurfaceCircleOfRevol;
+            auto parab = new ExamplesBase::InteractiveSurfaceCircleOfRevol;
             addToContext(parab, pickedPoint, Viewport::tr("CircleOfRevol"), object);
         });
         addMenu->addAction(Viewport::tr("Ellipse of revol"), q_ptr, [this, object, pickedPoint]() {
-            auto ellipse = new InteractiveSurfaceEllipseOfRevol;
+            auto ellipse = new ExamplesBase::InteractiveSurfaceEllipseOfRevol;
             addToContext(ellipse, pickedPoint, Viewport::tr("EllipseOfRevol"), object);
         });
         addMenu->addAction(Viewport::tr("Parabola of revol"), q_ptr, [this, object, pickedPoint]() {
-            auto parab = new InteractiveSurfaceParabOfRevol;
+            auto parab = new ExamplesBase::InteractiveSurfaceParabOfRevol;
             addToContext(parab, pickedPoint, Viewport::tr("ParabOfRevol"), object);
         });
         addMenu->addAction(Viewport::tr("Hyperbola of revol"), q_ptr, [this, object, pickedPoint]() {
-            auto parab = new InteractiveSurfaceHyperOfRevol;
+            auto parab = new ExamplesBase::InteractiveSurfaceHyperOfRevol;
             addToContext(parab, pickedPoint, Viewport::tr("HyperOfRevol"), object);
         });
         addMenu->addSeparator();
         addMenu->addAction(Viewport::tr("Cuboid"), q_ptr, [this, object, pickedPoint]() {
-            auto cuboid = new InteractiveCuboid;
+            auto cuboid = new ExamplesBase::InteractiveCuboid;
             addToContext(cuboid, pickedPoint, Viewport::tr("Cuboid"), object);
         });
         addMenu->addAction(Viewport::tr("Cylinder"), q_ptr, [this, object, pickedPoint]() {
-            auto cylinder = new InteractiveCylinder;
+            auto cylinder = new ExamplesBase::InteractiveCylinder;
             addToContext(cylinder, pickedPoint, Viewport::tr("Cylinder"), object);
         });
         addMenu->addSeparator();
         addMenu->addAction(Viewport::tr("Custom shape..."), q_ptr, [this, object, pickedPoint]() {
-            auto path = InteractiveObjectItemModelShape::requestFilename(q_ptr);
+            auto path = ExamplesBase::InteractiveObjectItemModelShape::requestFilename(q_ptr);
             if (!path.isEmpty()) {
-                auto shape = new InteractiveShape;
+                auto shape = new ExamplesBase::InteractiveShape;
                 shape->setModelPath(path);
                 addToContext(shape, pickedPoint, Viewport::tr("Shape"), object);
             }
@@ -159,7 +159,7 @@ class ViewportPrivate
                     removeEditor();
 
                     ctx->Deactivate(object);
-                    InteractiveObjectEditorCreator creator;
+                    ExamplesBase::InteractiveObjectEditorCreator creator;
                     editor = creator.create(object);
                     if (editor) {
                         object->AddChild(editor);
@@ -167,7 +167,7 @@ class ViewportPrivate
                     }
                 });
             }
-            auto cylinder = Handle(InteractiveCylinder)::DownCast(object);
+            auto cylinder = Handle(ExamplesBase::InteractiveCylinder)::DownCast(object);
             Handle(InteractiveObject) cutted;
             if (cylinder) {
                 AIS_ListOfInteractive list;
@@ -179,7 +179,7 @@ class ViewportPrivate
                     if (obj == cylinder) {
                         continue;
                     }
-                    auto interactive = Handle(InteractiveObject)::DownCast(obj);
+                    auto interactive = Handle(ExamplesBase::InteractiveObject)::DownCast(obj);
                     if (!interactive) {
                         continue;
                     }
@@ -195,7 +195,7 @@ class ViewportPrivate
                     topMenu.addAction(Viewport::tr("Cut"), q_ptr, [this, ctx, cylinder, interactive, cutShape, intTrsf]() {
                         removeFromContext(cylinder);
                         removeFromContext(interactive);
-                        auto cutted = new InteractiveObject;
+                        auto cutted = new ExamplesBase::InteractiveObject;
                         cutted->SetShape(cutShape);
                         addToContext(cutted, gp_XYZ(), Viewport::tr("Cutted"), nullptr);
                         ctx->SetLocation(cutted, intTrsf);
@@ -220,8 +220,8 @@ class ViewportPrivate
         return topMenu.exec(menuPos) != nullptr;
     }
 
-    void addToContext(const Handle(InteractiveObject) &object, const gp_XYZ &translation,
-                      const QString &name, const Handle(InteractiveObject) &parent) {
+    void addToContext(const Handle(ExamplesBase::InteractiveObject) &object, const gp_XYZ &translation,
+                      const QString &name, const Handle(ExamplesBase::InteractiveObject) &parent) {
         if (parent) {
             object->AddChild(object);
         }
@@ -233,7 +233,7 @@ class ViewportPrivate
             ctx->SetLocation(object, trsf);
             object->setName(QString("%1_%2").arg(name).arg(++objectCounter));
             if (mObjectsView) {
-                auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
+                auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(mObjectsView->model());
                 model->addObject(object);
             }
             auto observer = new ObjectObserver(q_ptr);
@@ -242,7 +242,7 @@ class ViewportPrivate
         }
     }
 
-    void removeFromContext(const Handle(InteractiveObject) &object) {
+    void removeFromContext(const Handle(ExamplesBase::InteractiveObject) &object) {
         auto ctx = q_ptr->context();
         if (!ctx) {
             return;
@@ -264,7 +264,7 @@ class ViewportPrivate
 
         ctx->Remove(object, Standard_False);
         if (mObjectsView) {
-            auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
+            auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(mObjectsView->model());
             model->removeObject(object);
         }
 
@@ -278,10 +278,10 @@ class ViewportPrivate
     void updateTreeViewSelection() {
         auto ctx = q_ptr->context();
         if (ctx && mObjectsView) {
-            Handle(InteractiveObject) interactive;
+            Handle(ExamplesBase::InteractiveObject) interactive;
             ctx->InitSelected();
             if (ctx->MoreSelected()) {
-                interactive = Handle(InteractiveObject)::DownCast(ctx->SelectedInteractive());
+                interactive = Handle(ExamplesBase::InteractiveObject)::DownCast(ctx->SelectedInteractive());
             }
 
             if (!interactive) {
@@ -289,8 +289,8 @@ class ViewportPrivate
                 return;
             }
 
-            Handle(InteractiveObject) current;
-            auto model = static_cast<ObjectsTreeModel *>(mObjectsView->model());
+            Handle(ExamplesBase::InteractiveObject) current;
+            auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(mObjectsView->model());
             auto indexes = mObjectsView->selectionModel()->selectedIndexes();
             if (!indexes.isEmpty()) {
                 current = model->object(indexes.first());
@@ -312,13 +312,13 @@ class ViewportPrivate
 
         delete mPropertyView->model();
 
-        InteractiveObjectItemModel *model = nullptr;
+        ExamplesBase::InteractiveObjectItemModel *model = nullptr;
         auto ctx = q_ptr->context();
         ctx->InitSelected();
         if (ctx->MoreSelected()) {
-            auto interactive = Handle(InteractiveObject)::DownCast(ctx->SelectedInteractive());
+            auto interactive = Handle(ExamplesBase::InteractiveObject)::DownCast(ctx->SelectedInteractive());
             if (interactive) {
-                InteractiveObjectItemModelCreator creator;
+                ExamplesBase::InteractiveObjectItemModelCreator creator;
                 model = creator.createModel(interactive);
                 model->update();
             }
@@ -347,10 +347,10 @@ class ViewportPrivate
     QAbstractItemView *mObjectsView = nullptr;
     QAbstractItemView *mPropertyView = nullptr;
     int objectCounter = 0;
-    std::map<Handle(InteractiveObject), ObjectObserver *> objectObservers;
+    std::map<Handle(ExamplesBase::InteractiveObject), ObjectObserver *> objectObservers;
     QTimer *observerCompressor = nullptr;
     Handle(AIS_Manipulator) manipulator;
-    Handle(InteractiveObjectEditor) editor;
+    Handle(ExamplesBase::InteractiveObjectEditor) editor;
 };
 
 Viewport::Viewport(QWidget *parent)
@@ -369,7 +369,7 @@ Viewport::Viewport(QWidget *parent)
         auto ctx = context();
         if (ctx) {
             if (d_ptr->mObjectsView) {
-                auto model = static_cast<ObjectsTreeModel *>(d_ptr->mObjectsView->model());
+                auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(d_ptr->mObjectsView->model());
                 model->update(ctx);
                 d_ptr->updateTreeViewSelection();
             }
@@ -377,7 +377,7 @@ Viewport::Viewport(QWidget *parent)
             d_ptr->updatePropertyView();
 
             if (d_ptr->manipulator->IsAttached()) {
-                auto object = Handle(InteractiveObject)::DownCast(d_ptr->manipulator->Object());
+                auto object = Handle(ExamplesBase::InteractiveObject)::DownCast(d_ptr->manipulator->Object());
                 if (object) {
                     auto ax = gp_Ax2().Transformed(object->Transformation());
                     auto bndBox = object->BoundingBox().Transformed(object->Transformation());
@@ -409,7 +409,7 @@ void Viewport::setObjectsView(QAbstractItemView *objectsView)
 {
     d_ptr->mObjectsView = objectsView;
     delete d_ptr->mObjectsView->model();
-    auto model = new ObjectsTreeModel(d_ptr->mObjectsView);
+    auto model = new ExamplesBase::ObjectsTreeModel(d_ptr->mObjectsView);
     d_ptr->mObjectsView->setModel(model);
     auto ctx = context();
     if (ctx) {
@@ -421,16 +421,16 @@ void Viewport::setObjectsView(QAbstractItemView *objectsView)
         Q_UNUSED(deselected);
         auto ctx = context();
         if (ctx) {
-            Handle(InteractiveObject) current;
+            Handle(ExamplesBase::InteractiveObject) current;
             if (!selected.indexes().isEmpty()) {
-                auto model = static_cast<ObjectsTreeModel *>(d_ptr->mObjectsView->model());
+                auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(d_ptr->mObjectsView->model());
                 current = model->object(selected.indexes().first());
             }
 
-            Handle(InteractiveObject) interactive;
+            Handle(ExamplesBase::InteractiveObject) interactive;
             ctx->InitSelected();
             if (ctx->MoreSelected()) {
-                interactive = Handle(InteractiveObject)::DownCast(ctx->SelectedInteractive());
+                interactive = Handle(ExamplesBase::InteractiveObject)::DownCast(ctx->SelectedInteractive());
             }
 
             if (!current) {
@@ -441,7 +441,7 @@ void Viewport::setObjectsView(QAbstractItemView *objectsView)
 
             d_ptr->updatePropertyView();
 
-            auto emptyShapeCurrent = Handle(InteractiveShape)::DownCast(current);
+            auto emptyShapeCurrent = Handle(ExamplesBase::InteractiveShape)::DownCast(current);
             if (emptyShapeCurrent && !emptyShapeCurrent->isValid()) {
                 if (!d_ptr->mPropertyView) {
                     return;
@@ -449,8 +449,8 @@ void Viewport::setObjectsView(QAbstractItemView *objectsView)
 
                 delete d_ptr->mPropertyView->model();
 
-                InteractiveObjectItemModel *model = nullptr;
-                InteractiveObjectItemModelCreator creator;
+                ExamplesBase::InteractiveObjectItemModel *model = nullptr;
+                ExamplesBase::InteractiveObjectItemModelCreator creator;
                 model = creator.createModel(current);
                 model->update();
                 d_ptr->mPropertyView->setModel(model);
@@ -460,7 +460,7 @@ void Viewport::setObjectsView(QAbstractItemView *objectsView)
 
     connect(d_ptr->mObjectsView, &QAbstractItemView::customContextMenuRequested,
             this, [this](const QPoint &point) {
-        auto model = static_cast<ObjectsTreeModel *>(d_ptr->mObjectsView->model());
+        auto model = static_cast<ExamplesBase::ObjectsTreeModel *>(d_ptr->mObjectsView->model());
         auto index = d_ptr->mObjectsView->indexAt(point);
         if (d_ptr->menuRequest(d_ptr->mObjectsView->mapToGlobal(point),
                                gp_XYZ(),
@@ -473,7 +473,7 @@ void Viewport::setObjectsView(QAbstractItemView *objectsView)
 void Viewport::setPropertyView(QAbstractItemView *propertyView)
 {
     d_ptr->mPropertyView = propertyView;
-    auto delegate = new InteractiveObjectItemModelDelegate(propertyView);
+    auto delegate = new ExamplesBase::InteractiveObjectItemModelDelegate(propertyView);
     propertyView->setItemDelegateForColumn(1, delegate);
 }
 
@@ -496,7 +496,7 @@ bool Viewport::mouseReleased(QMouseEvent *event)
     if (event->button() == Qt::RightButton) {
         const Graphic3d_Vec2i aPnt(event->pos().x(), event->pos().y());
 
-        Handle(InteractiveObject) object;
+        Handle(ExamplesBase::InteractiveObject) object;
         Graphic3d_Vec3d pickedPoint, projection;
         view()->ConvertWithProj(aPnt.x(), aPnt.y(),
                                 pickedPoint.x(), pickedPoint.y(), pickedPoint.z(),
@@ -507,7 +507,7 @@ bool Viewport::mouseReleased(QMouseEvent *event)
         if (ctx->MainSelector()->NbPicked()) {
             auto owner = ctx->MainSelector()->Picked(1);
             if (owner) {
-                object = Handle(InteractiveObject)::DownCast(owner->Selectable());
+                object = Handle(ExamplesBase::InteractiveObject)::DownCast(owner->Selectable());
                 auto point = ctx->MainSelector()->PickedPoint(1);
                 if (object) {
                     point.Transform(ctx->Location(object).Transformation().Inverted());
