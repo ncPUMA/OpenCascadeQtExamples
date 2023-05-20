@@ -1,9 +1,11 @@
 #include "viewport.h"
 
+#include <QDebug>
 #include <QMenu>
 #include <QMouseEvent>
 
 #include <AIS_InteractiveContext.hxx>
+#include <BRepAlgoAPI_Common.hxx>
 #include <V3d_View.hxx>
 
 #include <ExamplesBase/Objects/interactivecylinder.h>
@@ -98,6 +100,36 @@ void Viewport::menuRequest(const Handle(AIS_Shape) &object,
     if (editorAttachedObject()) {
         menu.addAction(tr("End edit"), this, [this]() {
             removeEditor();
+        });
+    }
+
+    if (object) {
+        menu.addSeparator();
+        menu.addAction(tr("Try END operation"), this, [this, object]() {
+            auto ctx = context();
+            TopoDS_Shape currentShape = object->Shape();
+            currentShape.Location(ctx->Location(object));
+            AIS_ListOfInteractive list;
+            ctx->ObjectsInside(list, AIS_KOI_Shape);
+            for (const auto &obj : list) {
+                auto target = Handle(AIS_Shape)::DownCast(obj);
+                if (!target || target == object) {
+                    continue;
+                }
+
+                auto targetShape = target->Shape();
+                targetShape.Location(ctx->Location(target));
+                TopoDS_Shape res = BRepAlgoAPI_Common(currentShape, targetShape);
+                if (res.IsNull()) {
+                    qDebug() << "err";
+                    continue;
+                }
+
+                removeFromContext(object);
+                removeFromContext(target);
+                addToContext(new AIS_Shape(res), gp_XYZ(), tr(""), nullptr);
+                return;
+            }
         });
     }
 }
