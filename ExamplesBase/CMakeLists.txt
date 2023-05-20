@@ -61,6 +61,8 @@ add_library(ExamplesBase SHARED
   Editors/interactiveobjecteditor.cpp
   Editors/interactiveobjecteditorcreator.h
   Editors/interactiveobjecteditorcreator.cpp
+  Editors/interactiveobjectsphereeditor.h
+  Editors/interactiveobjectsphereeditor.cpp
   Editors/interactiveobjectsurfacecircleofrevoleditor.h
   Editors/interactiveobjectsurfacecircleofrevoleditor.cpp
   Editors/interactiveobjectsurfaceellipseofrevoleditor.h
@@ -86,6 +88,8 @@ add_library(ExamplesBase SHARED
   ObjectModels/interactiveobjectitemmodeldelegate.cpp
   ObjectModels/interactiveobjectitemmodelshape.h
   ObjectModels/interactiveobjectitemmodelshape.cpp
+  ObjectModels/interactiveobjectitemmodelsphere.h
+  ObjectModels/interactiveobjectitemmodelsphere.cpp
   ObjectModels/interactiveobjectitemmodelsurface.h
   ObjectModels/interactiveobjectitemmodelsurface.cpp
   ObjectModels/interactiveobjectitemmodelsurfacecircleofrevol.h
@@ -111,6 +115,8 @@ add_library(ExamplesBase SHARED
   Objects/interactiveobject.cpp
   Objects/interactiveshape.h
   Objects/interactiveshape.cpp
+  Objects/interactivesphere.h
+  Objects/interactivesphere.cpp
   Objects/interactivesurface.h
   Objects/interactivesurface.cpp
   Objects/interactivesurfacecircleofrevol.h

@@ -3,6 +3,7 @@
 #include "interactiveobjectitemmodelcuboid.h"
 #include "interactiveobjectitemmodelcylinder.h"
 #include "interactiveobjectitemmodelshape.h"
+#include "interactiveobjectitemmodelsphere.h"
 #include "interactiveobjectitemmodelsurfacecircleofrevol.h"
 #include "interactiveobjectitemmodelsurfaceellipseofrevol.h"
 #include "interactiveobjectitemmodelsurfacehyperofrevol.h"
@@ -12,6 +13,7 @@
 #include "../Objects/interactivecuboid.h"
 #include "../Objects/interactivecylinder.h"
 #include "../Objects/interactiveshape.h"
+#include "../Objects/interactivesphere.h"
 #include "../Objects/interactivesurfacecircleofrevol.h"
 #include "../Objects/interactivesurfaceellipseofrevol.h"
 #include "../Objects/interactivesurfacehyperofrevol.h"
@@ -66,6 +68,11 @@ InteractiveObjectItemModel *InteractiveObjectItemModelCreator::createModel(const
         auto shape = Handle(InteractiveShape)::DownCast(interactive);
         if (shape) {
             return new InteractiveObjectItemModelShape(shape);
+        }
+
+        auto sphere = Handle(InteractiveSphere)::DownCast(interactive);
+        if (sphere) {
+            return new InteractiveObjectItemModelSphere(sphere);
         }
 
         return new InteractiveObjectItemModel(interactive);

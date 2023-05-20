@@ -7,6 +7,7 @@
 #include <V3d_View.hxx>
 
 #include <ExamplesBase/Objects/interactivecylinder.h>
+#include <ExamplesBase/Objects/interactivesphere.h>
 
 class ViewportPrivate
 {
@@ -63,35 +64,39 @@ void Viewport::menuRequest(const Handle(AIS_Shape) &object,
                            QMenu &menu)
 {
     if (!object) {
-        menu.addAction(Viewport::tr("Cylinder"), this, [this, object, pickedPoint]() {
+        menu.addAction(tr("Cylinder"), this, [this, object, pickedPoint]() {
             auto cylinder = new ExamplesBase::InteractiveCylinder;
-            addToContext(cylinder, pickedPoint, Viewport::tr("Cylinder"), object);
+            addToContext(cylinder, pickedPoint, tr("Cylinder"), object);
+        });
+        menu.addAction(tr("Sphere"), this, [this, object, pickedPoint]() {
+            auto cylinder = new ExamplesBase::InteractiveSphere;
+            addToContext(cylinder, pickedPoint, tr("Sphere"), object);
         });
     } else {
-        menu.addAction(Viewport::tr("Remove"), this, [this, object]() {
+        menu.addAction(tr("Remove"), this, [this, object]() {
             removeFromContext(object);
         });
         menu.addSeparator();
         if (manipulatorAttachedObject() != object) {
-            menu.addAction(Viewport::tr("Transform"), this, [this, object]() {
+            menu.addAction(tr("Transform"), this, [this, object]() {
                 showManipulator(object);
             });
         }
         auto interactive = Handle(ExamplesBase::InteractiveObject)::DownCast(object);
         if (interactive && editorAttachedObject() != interactive) {
-            menu.addAction(Viewport::tr("Edit"), this, [this, interactive]() {
+            menu.addAction(tr("Edit"), this, [this, interactive]() {
                 showEditor(interactive);
             });
         }
     }
 
     if (manipulatorAttachedObject()) {
-        menu.addAction(Viewport::tr("End transform"), this, [this]() {
+        menu.addAction(tr("End transform"), this, [this]() {
             removeManipulator();
         });
     }
     if (editorAttachedObject()) {
-        menu.addAction(Viewport::tr("End edit"), this, [this]() {
+        menu.addAction(tr("End edit"), this, [this]() {
             removeEditor();
         });
     }

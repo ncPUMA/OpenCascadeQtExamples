@@ -68,58 +68,58 @@ void Viewport::menuRequest(const Handle(ExamplesBase::InteractiveObject) &object
                            const gp_XYZ &pickedPoint,
                            QMenu &menu)
 {
-    auto addMenu = menu.addMenu(Viewport::tr("Add"));
-    addMenu->addAction(Viewport::tr("Plane"), this, [this, object, pickedPoint]() {
+    auto addMenu = menu.addMenu(tr("Add"));
+    addMenu->addAction(tr("Plane"), this, [this, object, pickedPoint]() {
         auto plane = new ExamplesBase::InteractiveSurfacePlane;
-        addToContext(plane, pickedPoint, Viewport::tr("Plane"), object);
+        addToContext(plane, pickedPoint, tr("Plane"), object);
     });
-    addMenu->addAction(Viewport::tr("Circle of revol"), this, [this, object, pickedPoint]() {
+    addMenu->addAction(tr("Circle of revol"), this, [this, object, pickedPoint]() {
         auto parab = new ExamplesBase::InteractiveSurfaceCircleOfRevol;
-        addToContext(parab, pickedPoint, Viewport::tr("CircleOfRevol"), object);
+        addToContext(parab, pickedPoint, tr("CircleOfRevol"), object);
     });
-    addMenu->addAction(Viewport::tr("Ellipse of revol"), this, [this, object, pickedPoint]() {
+    addMenu->addAction(tr("Ellipse of revol"), this, [this, object, pickedPoint]() {
         auto ellipse = new ExamplesBase::InteractiveSurfaceEllipseOfRevol;
-        addToContext(ellipse, pickedPoint, Viewport::tr("EllipseOfRevol"), object);
+        addToContext(ellipse, pickedPoint, tr("EllipseOfRevol"), object);
     });
-    addMenu->addAction(Viewport::tr("Parabola of revol"), this, [this, object, pickedPoint]() {
+    addMenu->addAction(tr("Parabola of revol"), this, [this, object, pickedPoint]() {
         auto parab = new ExamplesBase::InteractiveSurfaceParabOfRevol;
-        addToContext(parab, pickedPoint, Viewport::tr("ParabOfRevol"), object);
+        addToContext(parab, pickedPoint, tr("ParabOfRevol"), object);
     });
-    addMenu->addAction(Viewport::tr("Hyperbola of revol"), this, [this, object, pickedPoint]() {
+    addMenu->addAction(tr("Hyperbola of revol"), this, [this, object, pickedPoint]() {
         auto parab = new ExamplesBase::InteractiveSurfaceHyperOfRevol;
-        addToContext(parab, pickedPoint, Viewport::tr("HyperOfRevol"), object);
+        addToContext(parab, pickedPoint, tr("HyperOfRevol"), object);
     });
     addMenu->addSeparator();
-    addMenu->addAction(Viewport::tr("Cuboid"), this, [this, object, pickedPoint]() {
+    addMenu->addAction(tr("Cuboid"), this, [this, object, pickedPoint]() {
         auto cuboid = new ExamplesBase::InteractiveCuboid;
-        addToContext(cuboid, pickedPoint, Viewport::tr("Cuboid"), object);
+        addToContext(cuboid, pickedPoint, tr("Cuboid"), object);
     });
-    addMenu->addAction(Viewport::tr("Cylinder"), this, [this, object, pickedPoint]() {
+    addMenu->addAction(tr("Cylinder"), this, [this, object, pickedPoint]() {
         auto cylinder = new ExamplesBase::InteractiveCylinder;
-        addToContext(cylinder, pickedPoint, Viewport::tr("Cylinder"), object);
+        addToContext(cylinder, pickedPoint, tr("Cylinder"), object);
     });
     addMenu->addSeparator();
-    addMenu->addAction(Viewport::tr("Custom shape..."), this, [this, object, pickedPoint]() {
+    addMenu->addAction(tr("Custom shape..."), this, [this, object, pickedPoint]() {
         auto path = ExamplesBase::InteractiveObjectItemModelShape::requestFilename(this);
         if (!path.isEmpty()) {
             auto shape = new ExamplesBase::InteractiveShape;
             shape->setModelPath(path);
-            addToContext(shape, pickedPoint, Viewport::tr("Shape"), object);
+            addToContext(shape, pickedPoint, tr("Shape"), object);
         }
     });
 
     if (object) {
-        menu.addAction(Viewport::tr("Remove"), this, [this, object]() {
+        menu.addAction(tr("Remove"), this, [this, object]() {
             removeFromContext(object);
         });
         menu.addSeparator();
         if (manipulatorAttachedObject() != object) {
-            menu.addAction(Viewport::tr("Transform"), this, [this, object]() {
+            menu.addAction(tr("Transform"), this, [this, object]() {
                 showManipulator(object);
             });
         }
         if (editorAttachedObject() != object) {
-            menu.addAction(Viewport::tr("Edit"), this, [this, object]() {
+            menu.addAction(tr("Edit"), this, [this, object]() {
                 showEditor(object);
             });
         }
@@ -149,12 +149,12 @@ void Viewport::menuRequest(const Handle(ExamplesBase::InteractiveObject) &object
                 }
                 cutShape.Location(intTrsf.Inverted());
                 menu.addSeparator();
-                menu.addAction(Viewport::tr("Cut"), this, [this, cylinder, interactive, cutShape, intTrsf]() {
+                menu.addAction(tr("Cut"), this, [this, cylinder, interactive, cutShape, intTrsf]() {
                     removeFromContext(cylinder);
                     removeFromContext(interactive);
                     auto cutted = new ExamplesBase::InteractiveObject;
                     cutted->SetShape(cutShape);
-                    addToContext(cutted, gp_XYZ(), Viewport::tr("Cutted"), nullptr);
+                    addToContext(cutted, gp_XYZ(), tr("Cutted"), nullptr);
                     context()->SetLocation(cutted, intTrsf);
                     context()->Redisplay(cutted, Standard_True);
                 });
@@ -164,12 +164,12 @@ void Viewport::menuRequest(const Handle(ExamplesBase::InteractiveObject) &object
     }
 
     if (manipulatorAttachedObject()) {
-        menu.addAction(Viewport::tr("End transform"), this, [this]() {
+        menu.addAction(tr("End transform"), this, [this]() {
             removeManipulator();
         });
     }
     if (editorAttachedObject()) {
-        menu.addAction(Viewport::tr("End edit"), this, [this]() {
+        menu.addAction(tr("End edit"), this, [this]() {
             removeEditor();
         });
     }

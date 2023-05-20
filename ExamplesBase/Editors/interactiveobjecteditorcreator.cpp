@@ -2,6 +2,7 @@
 
 #include "../Objects/interactivecuboid.h"
 #include "../Objects/interactivecylinder.h"
+#include "../Objects/interactivesphere.h"
 #include "../Objects/interactivesurfacecircleofrevol.h"
 #include "../Objects/interactivesurfaceellipseofrevol.h"
 #include "../Objects/interactivesurfacehyperofrevol.h"
@@ -10,6 +11,7 @@
 
 #include "interactiveobjectcuboideditor.h"
 #include "interactiveobjectcylindereditor.h"
+#include "interactiveobjectsphereeditor.h"
 #include "interactiveobjectsurfacecircleofrevoleditor.h"
 #include "interactiveobjectsurfaceellipseofrevoleditor.h"
 #include "interactiveobjectsurfacehyperofrevoleditor.h"
@@ -52,6 +54,10 @@ Handle(InteractiveObjectEditor) InteractiveObjectEditorCreator::create(const Han
     auto cylinder = Handle(InteractiveCylinder)::DownCast(object);
     if (cylinder) {
         return new InteractiveObjectCylinderEditor(cylinder);
+    }
+    auto sphere = Handle(InteractiveSphere)::DownCast(object);
+    if (sphere) {
+        return new InteractiveObjectSphereEditor(sphere);
     }
     return nullptr;
 }
