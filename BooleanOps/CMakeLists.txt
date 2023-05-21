@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(BinaryOps VERSION 0.1 LANGUAGES CXX)
+project(BooleanOps VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -14,19 +14,19 @@ set(PROJECT_SOURCES
     viewport.cpp
 )
 
-add_executable(BinaryOps
+add_executable(BooleanOps
     ${PROJECT_SOURCES}
 )
 
 target_include_directories(
-  BinaryOps
+  BooleanOps
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../
     )
 
-target_link_libraries(BinaryOps PUBLIC ExamplesBase PRIVATE Qt5::Widgets)
+target_link_libraries(BooleanOps PUBLIC ExamplesBase PRIVATE Qt5::Widgets)
 
-target_link_libraries(BinaryOps PRIVATE
+target_link_libraries(BooleanOps PRIVATE
     TKernel TKMath TKService TKV3d TKOpenGl
     TKBRep TKIGES TKSTL TKVRML TKSTEP TKSTEPAttr TKSTEP209
     TKSTEPBase TKGeomBase TKGeomAlgo TKG3d TKG2d

@@ -105,7 +105,7 @@ void Viewport::menuRequest(const Handle(AIS_Shape) &object,
 
     if (object) {
         menu.addSeparator();
-        menu.addAction(tr("Try END operation"), this, [this, object]() {
+        menu.addAction(tr("END operation"), this, [this, object]() {
             auto ctx = context();
             TopoDS_Shape currentShape = object->Shape();
             currentShape.Location(ctx->Location(object));
