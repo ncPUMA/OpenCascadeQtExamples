@@ -19,9 +19,10 @@ public:
     void setRadius(Standard_Real R);
 
 protected:
-    Handle(Geom_Curve) getCurve() const Standard_OVERRIDE;
+    TopoDS_Shape createShape() const Standard_OVERRIDE;
 
 private:
+    friend class InteractiveSurfaceCircleOfRevolPrivate;
     InteractiveSurfaceCircleOfRevolPrivate *d;
 };
 

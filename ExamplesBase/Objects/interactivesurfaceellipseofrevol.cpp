@@ -1,6 +1,11 @@
 #include "interactivesurfaceellipseofrevol.h"
 
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
 #include <Geom_Ellipse.hxx>
+#include <gp_Elips.hxx>
+#include <TopoDS_Face.hxx>
 
 namespace ExamplesBase {
 
@@ -17,12 +22,17 @@ class InteractiveSurfaceEllipseOfRevolPrivate
         return sqrt(focal * focal - majR * majR);
     }
 
-    Handle(Geom_Curve) getCurve() const
-    {
-        gp_Ax2 axes;
-        return new Geom_Ellipse(axes, majorR(), minorR());
+    TopoDS_Shape createShape() const {
+        auto elipse = gp_Elips(gp_Ax2(), majorR(), minorR());
+        auto revFace = q->revolutionFace(new Geom_Ellipse(elipse));
+        revFace.Reverse();
+        auto wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(elipse));
+        TopoDS_Face capFace = BRepBuilderAPI_MakeFace(wire.Wire());
+        capFace.Reverse();
+        return q->buildShape(revFace, capFace);
     }
 
+    InteractiveSurfaceEllipseOfRevol *q;
     Standard_Real focal = 100.;
     Standard_Real eccentricity = 1.2;
 };
@@ -33,10 +43,11 @@ InteractiveSurfaceEllipseOfRevol::InteractiveSurfaceEllipseOfRevol()
     : InteractiveSurfaceRevolution()
     , d(new InteractiveSurfaceEllipseOfRevolPrivate)
 {
+    d->q = this;
     setUmax(M_PI);
     setVmax(M_PI);
     setRevolutionDirection(gp_Dir(1., 0., 0.));
-    updateSurface(d->getCurve());
+    updateShape(d->createShape());
 }
 
 InteractiveSurfaceEllipseOfRevol::~InteractiveSurfaceEllipseOfRevol()
@@ -58,7 +69,7 @@ void InteractiveSurfaceEllipseOfRevol::setFocal(Standard_Real F)
 {
     if (F > 0.) {
         d->focal = F;
-        updateSurface(d->getCurve());
+        updateShape(d->createShape());
     }
 }
 
@@ -66,7 +77,7 @@ void InteractiveSurfaceEllipseOfRevol::setEccentricity(Standard_Real eps)
 {
     if (eps > 0.) {
         d->eccentricity = eps;
-        updateSurface(d->getCurve());
+        updateShape(d->createShape());
     }
 }
 
@@ -80,9 +91,9 @@ Standard_Real InteractiveSurfaceEllipseOfRevol::minorR() const
     return d->minorR();
 }
 
-Handle(Geom_Curve) InteractiveSurfaceEllipseOfRevol::getCurve() const
+TopoDS_Shape InteractiveSurfaceEllipseOfRevol::createShape() const
 {
-    return d->getCurve();
+    return d->createShape();
 }
 
 }

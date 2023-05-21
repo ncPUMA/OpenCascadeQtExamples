@@ -1,6 +1,11 @@
 #include "interactivesurfacecircleofrevol.h"
 
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
 #include <Geom_Circle.hxx>
+#include <gp_Circ.hxx>
+#include <TopoDS_Face.hxx>
 
 namespace ExamplesBase {
 
@@ -8,12 +13,16 @@ class InteractiveSurfaceCircleOfRevolPrivate
 {
     friend class InteractiveSurfaceCircleOfRevol;
 
-    Handle(Geom_Curve) getCurve() const
-    {
-        gp_Ax2 axes;
-        return new Geom_Circle(axes, radius);
+    TopoDS_Shape createShape() const {
+        auto circle = gp_Circ(gp_Ax2(), radius);
+        auto revFace = q->revolutionFace(new Geom_Circle(circle));
+        revFace.Reverse();
+        auto wire = BRepBuilderAPI_MakeWire(BRepBuilderAPI_MakeEdge(circle));
+        auto capFace = BRepBuilderAPI_MakeFace(wire.Wire());
+        return q->buildShape(revFace, capFace);
     }
 
+    InteractiveSurfaceCircleOfRevol *q;
     Standard_Real radius = 50.;
 };
 
@@ -23,9 +32,10 @@ InteractiveSurfaceCircleOfRevol::InteractiveSurfaceCircleOfRevol()
     : InteractiveSurfaceRevolution()
     , d(new InteractiveSurfaceCircleOfRevolPrivate)
 {
+    d->q = this;
     setUmax(M_PI);
     setVmax(M_PI);
-    updateSurface(d->getCurve());
+    updateShape(d->createShape());
 }
 
 InteractiveSurfaceCircleOfRevol::~InteractiveSurfaceCircleOfRevol()
@@ -42,14 +52,14 @@ void InteractiveSurfaceCircleOfRevol::setRadius(Standard_Real R)
 {
     if (R > 0.) {
         d->radius = R;
-        updateSurface(d->getCurve());
+        updateShape(d->createShape());
         notify();
     }
 }
 
-Handle(Geom_Curve) InteractiveSurfaceCircleOfRevol::getCurve() const
+TopoDS_Shape InteractiveSurfaceCircleOfRevol::createShape() const
 {
-    return d->getCurve();
+    return d->createShape();
 }
 
 }

@@ -1,15 +1,20 @@
 #include "viewport.h"
 
-#include <QDebug>
 #include <QMenu>
 #include <QMouseEvent>
 
 #include <AIS_InteractiveContext.hxx>
 #include <BRepAlgoAPI_Common.hxx>
+#include <ShapeFix_Shape.hxx>
+#include <ShapeFix_Wireframe.hxx>
 #include <V3d_View.hxx>
 
 #include <ExamplesBase/Objects/interactivecylinder.h>
 #include <ExamplesBase/Objects/interactivesphere.h>
+#include <ExamplesBase/Objects/interactivesurfacecircleofrevol.h>
+#include <ExamplesBase/Objects/interactivesurfaceellipseofrevol.h>
+#include <ExamplesBase/Objects/interactivesurfacehyperofrevol.h>
+#include <ExamplesBase/Objects/interactivesurfaceparabofrevol.h>
 
 class ViewportPrivate
 {
@@ -74,6 +79,22 @@ void Viewport::menuRequest(const Handle(AIS_Shape) &object,
             auto cylinder = new ExamplesBase::InteractiveSphere;
             addToContext(cylinder, pickedPoint, tr("Sphere"), object);
         });
+        menu.addAction(tr("Circle of revol"), this, [this, object, pickedPoint]() {
+            auto circle = new ExamplesBase::InteractiveSurfaceCircleOfRevol;
+            addToContext(circle, pickedPoint, tr("Circle of revol"), object);
+        });
+        menu.addAction(tr("Ellipse of revol"), this, [this, object, pickedPoint]() {
+            auto ellipse = new ExamplesBase::InteractiveSurfaceEllipseOfRevol;
+            addToContext(ellipse, pickedPoint, tr("EllipseOfRevol"), object);
+        });
+        menu.addAction(tr("Parabola of revol"), this, [this, object, pickedPoint]() {
+            auto parabola = new ExamplesBase::InteractiveSurfaceParabOfRevol;
+            addToContext(parabola, pickedPoint, tr("Parabola of revol"), object);
+        });
+        menu.addAction(tr("Hyperbola of revol"), this, [this, object, pickedPoint]() {
+            auto parab = new ExamplesBase::InteractiveSurfaceHyperOfRevol;
+            addToContext(parab, pickedPoint, tr("HyperOfRevol"), object);
+        });
     } else {
         menu.addAction(tr("Remove"), this, [this, object]() {
             removeFromContext(object);
@@ -121,7 +142,6 @@ void Viewport::menuRequest(const Handle(AIS_Shape) &object,
                 targetShape.Location(ctx->Location(target));
                 TopoDS_Shape res = BRepAlgoAPI_Common(currentShape, targetShape);
                 if (res.IsNull()) {
-                    qDebug() << "err";
                     continue;
                 }
 
@@ -130,6 +150,19 @@ void Viewport::menuRequest(const Handle(AIS_Shape) &object,
                 addToContext(new AIS_Shape(res), gp_XYZ(), tr(""), nullptr);
                 return;
             }
+        });
+        menu.addAction(tr("Shape healing"), this, [this, object]() {
+            auto shape = object->Shape();
+            ShapeFix_Shape fixShape(shape);
+            fixShape.SetMaxTolerance(10.);
+            fixShape.Perform();
+            ShapeFix_Wireframe fixWireframe(fixShape.Shape());
+            fixWireframe.SetMaxTolerance(10.);
+            fixWireframe.ModeDropSmallEdges() = Standard_True;
+            fixWireframe.FixSmallEdges();
+            fixWireframe.FixWireGaps();
+            object->SetShape(fixWireframe.Shape());
+            context()->Redisplay(object, Standard_True);
         });
     }
 }

@@ -19,9 +19,10 @@ public:
     void setFocal(Standard_Real F);
 
 protected:
-    Handle(Geom_Curve) getCurve() const Standard_OVERRIDE;
+    TopoDS_Shape createShape() const Standard_OVERRIDE;
 
 private:
+    friend class InteractiveSurfaceParabOfRevolPrivate;
     InteractiveSurfaceParabOfRevolPrivate *d;
 };
 

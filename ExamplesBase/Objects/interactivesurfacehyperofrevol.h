@@ -24,9 +24,10 @@ public:
     Standard_Real minorR() const;
 
 protected:
-    Handle(Geom_Curve) getCurve() const Standard_OVERRIDE;
+    TopoDS_Shape createShape() const Standard_OVERRIDE;
 
 private:
+    friend class InteractiveSurfaceHyperOfRevolPrivate;
     InteractiveSurfaceHyperOfRevolPrivate *d;
 };
 

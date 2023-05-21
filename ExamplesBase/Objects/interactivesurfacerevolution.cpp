@@ -2,8 +2,9 @@
 
 #include <AIS_InteractiveContext.hxx>
 #include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakeSolid.hxx>
+#include <BRepPrim_Builder.hxx>
 #include <Geom_SurfaceOfRevolution.hxx>
-#include <TopoDS_Face.hxx>
 
 namespace ExamplesBase {
 
@@ -49,14 +50,14 @@ Standard_Real InteractiveSurfaceRevolution::getVmax() const
 void InteractiveSurfaceRevolution::setRevolutionDirection(const gp_Dir &direction)
 {
     d->revolutionDirection = direction;
-    updateSurface(getCurve());
+    updateShape(createShape());
 }
 
 void InteractiveSurfaceRevolution::setUmax(Standard_Real U)
 {
     if (U > 0.) {
         d->Umax = U;
-        updateSurface(getCurve());
+        updateShape(createShape());
     }
 }
 
@@ -64,16 +65,27 @@ void InteractiveSurfaceRevolution::setVmax(Standard_Real V)
 {
     if (V > 0.) {
         d->Vmax = V;
-        updateSurface(getCurve());
+        updateShape(createShape());
     }
 }
 
-void InteractiveSurfaceRevolution::updateSurface(const Handle(Geom_Curve) &curve)
+TopoDS_Face InteractiveSurfaceRevolution::revolutionFace(const Handle(Geom_Curve) &curve) const
 {
     Handle(Geom_SurfaceOfRevolution) revolution =
             new Geom_SurfaceOfRevolution(curve, gp_Ax1(gp::Origin(), d->revolutionDirection));
-    BRepBuilderAPI_MakeFace faceMaker(revolution, 0., d->Umax, 0., d->Vmax, Precision::Confusion());
-    updateShape(faceMaker.Face());
+    return BRepBuilderAPI_MakeFace(revolution, 0., d->Umax, 0., d->Vmax, Precision::Confusion());
+}
+
+TopoDS_Shape InteractiveSurfaceRevolution::buildShape(const TopoDS_Face &revolutionFace, const TopoDS_Face &cap)
+{
+    BRepPrim_Builder builder;
+    TopoDS_Shell shell;
+    builder.MakeShell(shell);
+    builder.AddShellFace(shell, revolutionFace);
+    builder.AddShellFace(shell, cap);
+    shell.Closed(BRep_Tool::IsClosed(shell));
+    builder.CompleteShell(shell);
+    return BRepBuilderAPI_MakeSolid(shell);
 }
 
 }

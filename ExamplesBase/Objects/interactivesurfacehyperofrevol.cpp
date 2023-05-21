@@ -1,6 +1,12 @@
 #include "interactivesurfacehyperofrevol.h"
 
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepAdaptor_Surface.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <Geom_SurfaceOfRevolution.hxx>
 #include <Geom_Hyperbola.hxx>
+#include <TopoDS_Face.hxx>
 
 namespace ExamplesBase {
 
@@ -17,12 +23,22 @@ class InteractiveSurfaceHyperOfRevolPrivate
         return sqrt(focal * focal - majR * majR);
     }
 
-    Handle(Geom_Curve) getCurve() const
-    {
-        gp_Ax2 axes;
-        return new Geom_Hyperbola(axes, majorR(), minorR());
+    TopoDS_Shape createShape() const {
+        Handle(Geom_Hyperbola) hyp = new Geom_Hyperbola(gp_Ax2(), majorR(), minorR());
+        auto revFace = q->revolutionFace(hyp);
+        revFace.Reverse();
+        BRepAdaptor_Surface surface(revFace);
+        auto p0 = surface.Value(0., q->getVmax());
+        auto p1 = surface.Value(M_PI, q->getVmax());
+        auto edge = BRepBuilderAPI_MakeEdge(p0, p1);
+        BRepAdaptor_Curve curve(edge);
+        Handle(Geom_SurfaceOfRevolution) revolution =
+                new Geom_SurfaceOfRevolution(curve.Curve().Curve(), gp_Ax1(gp::Origin(), q->getRevolutionDirection()));
+        auto cap = BRepBuilderAPI_MakeFace(revolution, 0., M_PI, 0., curve.LastParameter(), Precision::Confusion());
+        return q->buildShape(revFace, cap);
     }
 
+    InteractiveSurfaceHyperOfRevol *q;
     Standard_Real focal = 2.;
     Standard_Real eccentricity = 1.2;
 };
@@ -33,9 +49,10 @@ InteractiveSurfaceHyperOfRevol::InteractiveSurfaceHyperOfRevol()
     : InteractiveSurfaceRevolution()
     , d(new InteractiveSurfaceHyperOfRevolPrivate)
 {
+    d->q = this;
     setVmax(M_PI * 2);
     setRevolutionDirection(gp_Dir(1., 0., 0.));
-    updateSurface(d->getCurve());
+    updateShape(d->createShape());
 }
 
 InteractiveSurfaceHyperOfRevol::~InteractiveSurfaceHyperOfRevol()
@@ -57,7 +74,7 @@ void InteractiveSurfaceHyperOfRevol::setFocal(Standard_Real F)
 {
     if (F > 0.) {
         d->focal = F;
-        updateSurface(d->getCurve());
+        updateShape(d->createShape());
     }
 }
 
@@ -65,7 +82,7 @@ void InteractiveSurfaceHyperOfRevol::setEccentricity(Standard_Real eps)
 {
     if (eps > 0.) {
         d->eccentricity = eps;
-        updateSurface(d->getCurve());
+        updateShape(d->createShape());
     }
 }
 
@@ -79,9 +96,9 @@ Standard_Real InteractiveSurfaceHyperOfRevol::minorR() const
     return d->minorR();
 }
 
-Handle(Geom_Curve) InteractiveSurfaceHyperOfRevol::getCurve() const
+TopoDS_Shape InteractiveSurfaceHyperOfRevol::createShape() const
 {
-    return d->getCurve();
+    return d->createShape();
 }
 
 }

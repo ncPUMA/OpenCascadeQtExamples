@@ -4,6 +4,7 @@
 #include "interactivesurface.h"
 
 class Geom_Curve;
+class TopoDS_Face;
 
 namespace ExamplesBase {
 
@@ -26,8 +27,10 @@ public:
     void setVmax(Standard_Real V);
 
 protected:
-    void updateSurface(const Handle(Geom_Curve) &curve);
-    virtual Handle(Geom_Curve) getCurve() const = 0;
+    virtual TopoDS_Shape createShape() const = 0;
+
+    TopoDS_Face revolutionFace(const Handle(Geom_Curve) &curve) const;
+    static TopoDS_Shape buildShape(const TopoDS_Face &revolutionFace, const TopoDS_Face &cap);
 
 private:
     InteractiveSurfaceRevolutionPrivate *d;
