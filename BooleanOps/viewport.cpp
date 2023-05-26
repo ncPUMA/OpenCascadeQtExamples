@@ -76,8 +76,8 @@ void Viewport::menuRequest(const Handle(AIS_Shape) &object,
             addToContext(cylinder, pickedPoint, tr("Cylinder"), object);
         });
         menu.addAction(tr("Sphere"), this, [this, object, pickedPoint]() {
-            auto cylinder = new ExamplesBase::InteractiveSphere;
-            addToContext(cylinder, pickedPoint, tr("Sphere"), object);
+            auto sphere = new ExamplesBase::InteractiveSphere;
+            addToContext(sphere, pickedPoint, tr("Sphere"), object);
         });
         menu.addAction(tr("Circle of revol"), this, [this, object, pickedPoint]() {
             auto circle = new ExamplesBase::InteractiveSurfaceCircleOfRevol;
