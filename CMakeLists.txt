@@ -33,6 +33,7 @@ add_subdirectory(SceneLoading)
 add_subdirectory(Arrows)
 add_subdirectory(BooleanOps)
 add_subdirectory(ShapeToMesh)
+add_subdirectory(TexturedShapes)
 
 file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Models")
-file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Textures")
+file(COPY Textures/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Textures")

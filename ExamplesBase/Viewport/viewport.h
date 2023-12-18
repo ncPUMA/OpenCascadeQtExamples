@@ -22,7 +22,7 @@ public:
     explicit Viewport(QWidget *parent = nullptr);
     ~Viewport();
 
-    bool loadModel(const QString &path, Handle(AIS_Shape) &shape, Handle(AIS_Trihedron) &trihedron) const;
+    bool loadModel(const QString &path, Handle(AIS_Shape) &shape, Handle(AIS_Trihedron) trihedron = nullptr) const;
 
     void fitInView();
 

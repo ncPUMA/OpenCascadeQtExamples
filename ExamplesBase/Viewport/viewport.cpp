@@ -119,7 +119,7 @@ Viewport::~Viewport()
     delete d_ptr;
 }
 
-bool ExamplesBase::Viewport::loadModel(const QString &path, Handle(AIS_Shape) &shape, Handle(AIS_Trihedron) &trihedron) const
+bool ExamplesBase::Viewport::loadModel(const QString &path, Handle(AIS_Shape) &shape, Handle(AIS_Trihedron) trihedron) const
 {
     ExamplesBase::ModelLoaderFactoryMethod factory;
     auto &loader = factory.loaderByFName(path);
@@ -130,12 +130,14 @@ bool ExamplesBase::Viewport::loadModel(const QString &path, Handle(AIS_Shape) &s
 
     shape = new AIS_Shape(topo_shape);
     d_ptr->mContext->Display(shape, Standard_False);
-    auto coords = new Geom_Axis2Placement(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.), gp_Dir(1., 0., 0.));
-    trihedron = new AIS_Trihedron(coords);
-    trihedron->SetSize(15.);
-    d_ptr->mContext->Display(trihedron, Standard_False);
-    d_ptr->mContext->Deactivate(trihedron);
     d_ptr->mContext->SetDisplayMode(shape, AIS_Shaded, Standard_True);
+    if (trihedron) {
+        auto coords = new Geom_Axis2Placement(gp_Pnt(0., 0., 0.), gp_Dir(0., 0., 1.), gp_Dir(1., 0., 0.));
+        trihedron = new AIS_Trihedron(coords);
+        trihedron->SetSize(15.);
+        d_ptr->mContext->Display(trihedron, Standard_False);
+        d_ptr->mContext->Deactivate(trihedron);
+    }
     return true;
 }
 
