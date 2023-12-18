@@ -35,3 +35,4 @@ add_subdirectory(BooleanOps)
 add_subdirectory(ShapeToMesh)
 
 file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Models")
+file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Textures")

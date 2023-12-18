@@ -99,7 +99,8 @@ Viewport::Viewport(QWidget *parent)
     d_ptr->q_ptr = this;
     auto ctx = context();
     Handle(AIS_Trihedron) trihedron;
-    if (loadModel(QStringLiteral("../Models/tube_with_cuts.stl"), d_ptr->mModel, trihedron)) {
+    auto modelFileName = QStringLiteral("../Models/tube_with_cuts.step");
+    if (loadModel(modelFileName, d_ptr->mModel, trihedron)) {
         gp_Trsf transform;
         transform.SetTranslationPart(gp_Vec(10, 20, 30));
         gp_Quaternion quat;
@@ -111,6 +112,8 @@ Viewport::Viewport(QWidget *parent)
         ctx->SetSelectionModeActive(d_ptr->mModel,
                                     AIS_Shape::SelectionMode(TopAbs_SHAPE),
                                     Standard_False);
+    } else {
+        qFatal("Can't load model %s", modelFileName.toLatin1().constData());
     }
 }
 
