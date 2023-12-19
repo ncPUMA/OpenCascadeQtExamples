@@ -24,8 +24,11 @@ jobs:
       with:
         version: '5.15.2'
 
+    - name: Install OpenCascade 3-rd party
+      run: sudo apt-get install -y xfonts-scalable tcllib tklib tcl-dev tk-dev libfreetype-dev libxt-dev libxmu-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev libfreeimage-dev libtbb-dev libgl2ps-dev
+
     - name: Install OpenCascade
-      run: sudo apt-get install -y xfonts-scalable libocct-data-exchange-dev libocct-draw-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev occt-misc
+      run: sudo apt-get install -y libocct-data-exchange-dev libocct-draw-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev occt-misc
       
     - uses: actions/checkout@v3
 
