@@ -1,3 +1,9 @@
+/*
+    SPDX-FileCopyrightText: 2023 Ilya Pominov <ncpumanc@gmail.com>
+
+    SPDX-License-Identifier: GPL-2.0-or-later
+*/
+
 #ifndef EB_INTERACTIVEFACENORMAL_H
 #define EB_INTERACTIVEFACENORMAL_H
 
