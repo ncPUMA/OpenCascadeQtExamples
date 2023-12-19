@@ -20,7 +20,7 @@ endif()
 
 find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED Core Widgets)
 
-find_package(OpenCASCADE REQUIRED PATHS ${OpenCASCADE_DIR} NO_DEFAULT_PATH)
+find_package(OpenCASCADE CONFIG REQUIRED)
 include_directories(${OpenCASCADE_INCLUDE_DIR})
 
 add_subdirectory(ExamplesBase)

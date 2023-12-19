@@ -25,7 +25,7 @@ jobs:
         version: '5.15.2'
 
     - name: Install OpenCascade
-      run: sudo apt install -y xfonts-scalable libocct-data-exchange-dev libocct-draw-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev
+      run: sudo apt install -y xfonts-scalable libocct-data-exchange-dev libocct-draw-dev libocct-foundation-dev libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-ocaf-dev libocct-visualization-dev occt-misc
       
     - uses: actions/checkout@v3
 
