@@ -4,8 +4,10 @@
 
 #include <AIS_InteractiveContext.hxx>
 #include <AIS_Shape.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepPrimAPI_MakeBox.hxx>
 #include <BRepPrimAPI_MakeSphere.hxx>
+#include <Geom_Plane.hxx>
 #include <Graphic3d_Texture2Dmanual.hxx>
 #include <Graphic3d_Texture2Dplane.hxx>
 #include <Prs3d_ShadingAspect.hxx>
@@ -50,7 +52,7 @@ class ViewportPrivate
         texture1->DisableModulate();
 //        texture1->SetScaleS(2.);
 //        texture1->SetTranslateS(.2);
-        texture1->SetTranslateT(.2);
+//        texture1->SetTranslateT(1.2);
         texture1->SetRotation(15.);
 
         Handle(Graphic3d_Texture2Dplane) texture2 = new Graphic3d_Texture2Dplane("../Textures/brick-texture-23888.png");
@@ -70,6 +72,34 @@ class ViewportPrivate
         auto ctx = q_ptr->context();
         ctx->Display(boxObj,Standard_False);
         ctx->Deactivate(boxObj);
+
+        gp_Trsf transform;
+        transform.SetTranslation(gp_Pnt(), gp_Pnt(0., 200., 0.));
+        ctx->SetLocation(boxObj, transform);
+    }
+
+    void addPlane() {
+        gp_Ax3 axes;
+        Handle(Geom_Plane) plane = new Geom_Plane(axes);
+        BRepBuilderAPI_MakeFace faceMaker(plane, 0., 50., 0., 50., Precision::Confusion());
+        Handle(AIS_Shape) planeObj = new AIS_Shape(faceMaker.Face());
+        planeObj->Attributes()->SetupOwnShadingAspect();
+        auto shadingAspect = planeObj->Attributes()->ShadingAspect()->Aspect();
+        auto material = shadingAspect->FrontMaterial();
+        material.SetColor(Quantity_NOC_WHITE);
+        shadingAspect->SetFrontMaterial(material);
+
+        Handle(Graphic3d_Texture2Dplane) texture = new Graphic3d_Texture2Dplane("../Textures/brick-texture-23888.png");
+        texture->DisableRepeat();
+        texture->DisableModulate();
+
+        shadingAspect->SetTextureMapOn(true);
+        shadingAspect->SetTextureMap(texture);
+
+        planeObj->SetDisplayMode(AIS_Shaded);
+        auto ctx = q_ptr->context();
+        ctx->Display(planeObj,Standard_False);
+        ctx->Deactivate(planeObj);
     }
 
     Viewport *q_ptr;
@@ -83,6 +113,7 @@ Viewport::Viewport(QWidget *parent)
 
     d_ptr->addDeathStar();
     d_ptr->addCube();
+    d_ptr->addPlane();
 }
 
 Viewport::~Viewport()
