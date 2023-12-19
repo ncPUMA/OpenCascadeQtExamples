@@ -23,7 +23,7 @@
 #include <TopoDS_Edge.hxx>
 #include <TopoDS_Face.hxx>
 
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
 #include <BRepAdaptor_Surface.hxx>
 #include <Geom2dAdaptor_Curve.hxx>
 #else
@@ -395,7 +395,7 @@ bool Viewport::mouseMoved(QMouseEvent *event)
                         auto startUV = surfAnalis->ValueOfUV(startPointLocal, Precision::Confusion());
                         auto endUV = surfAnalis->ValueOfUV(endPointLocal, Precision::Confusion());
                         Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(startUV, endUV);
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
                         Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve),
                                                              new BRepAdaptor_Surface(d_ptr->mStartCutFace));
 #else

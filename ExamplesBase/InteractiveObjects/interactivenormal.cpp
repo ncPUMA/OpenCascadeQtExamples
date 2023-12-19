@@ -38,7 +38,7 @@ class InteractiveNormalPrivate
 
         //! Checks if picking ray can be used for detection.
         Standard_Boolean isValidRay (const SelectBasics_SelectingVolumeManager &volMgr) const {
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
             auto selectionType = SelectMgr_SelectionType_Point;
 #else
             auto selectionType = SelectBasics_SelectingVolumeManager::Point;

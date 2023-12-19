@@ -27,7 +27,7 @@
 #include <StdPrs_Curve.hxx>
 #include <TopoDS_Face.hxx>
 
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
 #include <BRepAdaptor_Surface.hxx>
 #include <Geom2dAdaptor_Curve.hxx>
 #else
@@ -188,7 +188,7 @@ class InteractiveCurvePrivate
             auto first = start->get2dPnt();
             auto last = mLastPoint->get2dPnt();
             Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeSegment(first, last);
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
             return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(face));
 #else
             return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(face));
@@ -221,7 +221,7 @@ class InteractiveCurvePrivate
             auto midle = mMidlePoint->get2dPnt();
             auto last = mLastPoint->get2dPnt();
             Handle(Geom2d_TrimmedCurve) curve = GCE2d_MakeArcOfCircle(first, midle, last);
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
             return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(face));
 #else
             return Adaptor3d_CurveOnSurface(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(face));

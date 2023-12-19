@@ -53,7 +53,7 @@
 #include <TopoDS_Face.hxx>
 #include <V3d_View.hxx>
 
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
 #include <BRepAdaptor_Surface.hxx>
 #include <Geom2dAdaptor_Curve.hxx>
 #else
@@ -78,7 +78,7 @@ class InteractiveFaceNormalPrivate
 
         //! Checks if picking ray can be used for detection.
         Standard_Boolean isValidRay (const SelectBasics_SelectingVolumeManager &volMgr) const {
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
             auto selectionType = SelectMgr_SelectionType_Point;
 #else
             auto selectionType = SelectBasics_SelectingVolumeManager::Point;
@@ -300,7 +300,7 @@ class InteractiveFaceNormalPrivate
         oposite.Transform(mRotation);
     }
 
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
     Handle(Adaptor3d_Curve) createIsoLine(bool ULine) const {
 #else
     Handle(Adaptor3d_HCurve) createIsoLine(bool ULine) const {
@@ -315,7 +315,7 @@ class InteractiveFaceNormalPrivate
         } else {
             curve = GCE2d_MakeSegment(mUV, gp_Pnt2d(mUV.X(), v2));
         }
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
         const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_Curve(curve), new BRepAdaptor_Surface(mFace));
 #else
         const Adaptor3d_CurveOnSurface curveOnSurf(new Geom2dAdaptor_HCurve(curve), new BRepAdaptor_HSurface(mFace));
@@ -327,7 +327,7 @@ class InteractiveFaceNormalPrivate
         const gp_Pnt V1end = pnt.Translated(d1Vec.Normalized() * 5.);
         ShapeAnalysis_Curve curveAnalis;
         curveAnalis.Project(curveOnSurf, V1end, Precision::Confusion(), projection, U);
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
         return curveOnSurf.Trim(curveOnSurf.FirstParameter(), U, Precision::Confusion());
 #else
         return curveOnSurf.Trim(curveOnSurf.FirstParameter(), U, Precision::Confusion());
@@ -380,7 +380,7 @@ class InteractiveFaceNormalPrivate
             {
                 Handle(SelectMgr_EntityOwner) owner = new SelectMgr_EntityOwner(q);
                 owner->SetComesFromDecomposition(Standard_True);
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
                 Handle(Select3D_SensitiveCurve) sens =
                         new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(*createIsoLine(true)), 50);
 #else
@@ -404,7 +404,7 @@ class InteractiveFaceNormalPrivate
             {
                 Handle(SelectMgr_EntityOwner) owner = new SelectMgr_EntityOwner(q);
                 owner->SetComesFromDecomposition(Standard_True);
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
                 Handle(Select3D_SensitiveCurve) sens =
                         new Select3D_SensitiveCurve(owner, GeomAdaptor::MakeCurve(*createIsoLine(false)), 50);
 #else
@@ -498,7 +498,7 @@ class InteractiveFaceNormalPrivate
         aspect->SetInteriorColor(Quantity_ColorRGBA(aspect->Color(), alpha));
         drawer->SetLineAspect(new Prs3d_LineAspect(aspect));
 
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
         StdPrs_Curve::Add(presentation, *createIsoLine(true), drawer);
 #else
         StdPrs_Curve::Add(presentation, createIsoLine(true)->Curve(), drawer);
@@ -515,7 +515,7 @@ class InteractiveFaceNormalPrivate
         aspect->SetInteriorColor(Quantity_ColorRGBA(aspect->Color(), alpha));
         drawer->SetLineAspect(new Prs3d_LineAspect(aspect));
 
-#if OCC_VERSION_HEX > 0x070500
+#if OCC_VERSION_HEX >= 0x070600
         StdPrs_Curve::Add(presentation, *createIsoLine(false), drawer);
 #else
         StdPrs_Curve::Add(presentation, createIsoLine(false)->Curve(), drawer);
