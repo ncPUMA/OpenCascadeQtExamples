@@ -118,34 +118,31 @@ Viewport::~Viewport()
     delete d_ptr;
 }
 
-bool Viewport::mouseReleased(QMouseEvent *event)
+void Viewport::contextMenuRequest(const Handle(AIS_InteractiveObject) &object,
+                                  const gp_XYZ &pickedPoint,
+                                  QMenu &menu)
 {
-    if (event->button() == Qt::RightButton) {
-        QMenu topMenu;
-        topMenu.addAction(tr("Draw demo"), this, [this]() {
-            d_ptr->removeArrows(context());
-            d_ptr->drawDemo(context());
-        });
-        topMenu.addSeparator();
-        topMenu.addAction(tr("Draw 100K lines with arrows as one object"), this, [this]() {
-            d_ptr->removeArrows(context());
-            d_ptr->drawWithArrows(context(), 100000);
-            d_ptr->tm.restart();
-            QMetaObject::invokeMethod(this, [this](){
-                qDebug() << "Render finish" << QString::number(d_ptr->tm.restart() / 1000., 'f') << "s.";
-                fitInView();
-            }, Qt::QueuedConnection);
-        });
-        topMenu.addAction(tr("Draw 10M lines without arrows as one object"), this, [this]() {
-            d_ptr->removeArrows(context());
-            d_ptr->drawWithoutArrows(context(), 10000000);
-            d_ptr->tm.restart();
-            QMetaObject::invokeMethod(this, [this](){
-                qDebug() << "Render finish" << QString::number(d_ptr->tm.restart() / 1000., 'f') << "s.";
-                fitInView();
-            }, Qt::QueuedConnection);
-        });
-        return topMenu.exec(event->globalPos()) != nullptr;
-    }
-    return false;
+    menu.addAction(tr("Draw demo"), this, [this]() {
+        d_ptr->removeArrows(context());
+        d_ptr->drawDemo(context());
+    });
+    menu.addSeparator();
+    menu.addAction(tr("Draw 100K lines with arrows as one object"), this, [this]() {
+        d_ptr->removeArrows(context());
+        d_ptr->drawWithArrows(context(), 100000);
+        d_ptr->tm.restart();
+        QMetaObject::invokeMethod(this, [this](){
+            qDebug() << "Render finish" << QString::number(d_ptr->tm.restart() / 1000., 'f') << "s.";
+            fitInView();
+        }, Qt::QueuedConnection);
+    });
+    menu.addAction(tr("Draw 10M lines without arrows as one object"), this, [this]() {
+        d_ptr->removeArrows(context());
+        d_ptr->drawWithoutArrows(context(), 10000000);
+        d_ptr->tm.restart();
+        QMetaObject::invokeMethod(this, [this](){
+            qDebug() << "Render finish" << QString::number(d_ptr->tm.restart() / 1000., 'f') << "s.";
+            fitInView();
+        }, Qt::QueuedConnection);
+    });
 }

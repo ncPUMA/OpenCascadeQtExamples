@@ -6,6 +6,7 @@
 
 #include "viewport.h"
 
+#include <QMenu>
 #include <QMouseEvent>
 
 #include <AIS_InteractiveContext.hxx>
@@ -125,7 +126,9 @@ Viewport::~Viewport()
     delete d_ptr;
 }
 
-bool ExamplesBase::Viewport::loadModel(const QString &path, Handle(AIS_Shape) &shape, Handle(AIS_Trihedron) trihedron) const
+bool ExamplesBase::Viewport::loadModel(const QString &path,
+                                       Handle(AIS_Shape) &shape,
+                                       Handle(AIS_Trihedron) trihedron) const
 {
     ExamplesBase::ModelLoaderFactoryMethod factory;
     auto &loader = factory.loaderByFName(path);
@@ -187,6 +190,13 @@ bool ExamplesBase::Viewport::mouseReleased(QMouseEvent *)
 bool ExamplesBase::Viewport::mouseMoved(QMouseEvent *)
 {
     return false;
+}
+
+void ExamplesBase::Viewport::contextMenuRequest(const Handle(AIS_InteractiveObject) &,
+                                                const gp_XYZ &,
+                                                QMenu &)
+{
+
 }
 
 QPaintEngine *Viewport::paintEngine() const
@@ -265,7 +275,39 @@ void Viewport::mouseReleaseEvent(QMouseEvent *event)
         update();
     }
 
-    if (mouseReleased(event)) {
+    bool needRedraw = mouseReleased(event);
+    if (event->button() == Qt::RightButton) {
+        const Graphic3d_Vec2i aPnt(event->pos().x(), event->pos().y());
+
+        Handle(AIS_Shape) object;
+        Graphic3d_Vec3d pickedPoint, projection;
+        view()->ConvertWithProj(aPnt.x(), aPnt.y(),
+                                pickedPoint.x(), pickedPoint.y(), pickedPoint.z(),
+                                projection.x(), projection.y(), projection.z());
+
+        auto ctx = context();
+        ctx->MainSelector()->Pick(aPnt.x(), aPnt.y(), view());
+        if (ctx->MainSelector()->NbPicked()) {
+            auto owner = ctx->MainSelector()->Picked(1);
+            if (owner) {
+                object = Handle(AIS_Shape)::DownCast(owner->Selectable());
+                auto point = ctx->MainSelector()->PickedPoint(1);
+                if (object) {
+                    point.Transform(ctx->Location(object).Transformation().Inverted());
+                    pickedPoint.SetValues(point.X(), point.Y(), point.Z());
+                }
+            }
+        }
+
+        gp_XYZ translation(pickedPoint.x(), pickedPoint.y(), pickedPoint.z());
+        QMenu menu;
+        contextMenuRequest(object, translation, menu);
+        if (!menu.isEmpty() && menu.exec(event->globalPos()) != nullptr) {
+            needRedraw = true;
+        }
+    }
+
+    if (needRedraw) {
         d_ptr->mView->Redraw();
     }
 }

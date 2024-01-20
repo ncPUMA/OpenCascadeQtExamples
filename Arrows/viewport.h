@@ -21,7 +21,9 @@ public:
     void setObjectsView(QTreeView *objectsView);
 
 protected:
-    bool mouseReleased(QMouseEvent *event) final;
+    void contextMenuRequest(const Handle(AIS_InteractiveObject) &object,
+                            const gp_XYZ &pickedPoint,
+                            QMenu &menu) final;
 
 private:
     ViewportPrivate *const d_ptr;

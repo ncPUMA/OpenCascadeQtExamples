@@ -12,7 +12,6 @@
 
 #include <AIS_InteractiveContext.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
-#include <V3d_View.hxx>
 
 #include <ExamplesBase/ObjectModels/objectstreemodel.h>
 #include <ExamplesBase/ObjectModels/interactiveobjectitemmodelshape.h>
@@ -37,37 +36,12 @@ void Viewport::objectsViewMenuRequest(const Handle(AIS_InteractiveObject) &obj, 
     menuRequest(interactive, gp_XYZ(), menu);
 }
 
-bool Viewport::mouseReleased(QMouseEvent *event)
+void Viewport::contextMenuRequest(const Handle(AIS_InteractiveObject) &object,
+                                  const gp_XYZ &pickedPoint,
+                                  QMenu &menu)
 {
-    if (event->button() == Qt::RightButton) {
-        const Graphic3d_Vec2i aPnt(event->pos().x(), event->pos().y());
-
-        Handle(ExamplesBase::InteractiveObject) object;
-        Graphic3d_Vec3d pickedPoint, projection;
-        view()->ConvertWithProj(aPnt.x(), aPnt.y(),
-                                pickedPoint.x(), pickedPoint.y(), pickedPoint.z(),
-                                projection.x(), projection.y(), projection.z());
-
-        auto ctx = context();
-        ctx->MainSelector()->Pick(aPnt.x(), aPnt.y(), view());
-        if (ctx->MainSelector()->NbPicked()) {
-            auto owner = ctx->MainSelector()->Picked(1);
-            if (owner) {
-                object = Handle(ExamplesBase::InteractiveObject)::DownCast(owner->Selectable());
-                auto point = ctx->MainSelector()->PickedPoint(1);
-                if (object) {
-                    point.Transform(ctx->Location(object).Transformation().Inverted());
-                    pickedPoint.SetValues(point.X(), point.Y(), point.Z());
-                }
-            }
-        }
-
-        gp_XYZ translation(pickedPoint.x(), pickedPoint.y(), pickedPoint.z());
-        QMenu menu;
-        menuRequest(object, translation, menu);
-        return menu.exec(event->globalPos()) != nullptr;
-    }
-    return false;
+    auto interactive = Handle(ExamplesBase::InteractiveObject)::DownCast(object);
+    menuRequest(interactive, pickedPoint, menu);
 }
 
 void Viewport::menuRequest(const Handle(ExamplesBase::InteractiveObject) &object,

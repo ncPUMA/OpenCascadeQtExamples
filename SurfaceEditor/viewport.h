@@ -15,8 +15,11 @@ public:
     Viewport();
 
 protected:
-    void objectsViewMenuRequest(const Handle(AIS_InteractiveObject) &obj, QMenu &menu);
-    bool mouseReleased(QMouseEvent *event) final;
+    void objectsViewMenuRequest(const Handle(AIS_InteractiveObject) &obj, QMenu &menu) final;
+
+    void contextMenuRequest(const Handle(AIS_InteractiveObject) &object,
+                            const gp_XYZ &pickedPoint,
+                            QMenu &menu) final;
 
 private:
     void menuRequest(const Handle(ExamplesBase::InteractiveObject) &object,

@@ -13,9 +13,13 @@
 
 #include <Standard_Handle.hxx>
 
+class QMenu;
+
 class AIS_InteractiveContext;
+class AIS_InteractiveObject;
 class AIS_Shape;
 class AIS_Trihedron;
+class gp_XYZ;
 class V3d_View;
 
 namespace ExamplesBase {
@@ -28,7 +32,9 @@ public:
     explicit Viewport(QWidget *parent = nullptr);
     ~Viewport();
 
-    bool loadModel(const QString &path, Handle(AIS_Shape) &shape, Handle(AIS_Trihedron) trihedron = nullptr) const;
+    bool loadModel(const QString &path,
+                   Handle(AIS_Shape) &shape,
+                   Handle(AIS_Trihedron) trihedron = nullptr) const;
 
     void fitInView();
 
@@ -41,6 +47,9 @@ protected:
     virtual bool mousePressed(QMouseEvent *event);
     virtual bool mouseReleased(QMouseEvent *event);
     virtual bool mouseMoved(QMouseEvent *event);
+    virtual void contextMenuRequest(const Handle(AIS_InteractiveObject) &object,
+                                    const gp_XYZ &pickedPoint,
+                                    QMenu &menu);
 
     QPaintEngine* paintEngine() const final;
     void paintEvent(QPaintEvent *) final;
