@@ -50,9 +50,9 @@
 #include <ExamplesBase/InteractiveObjects/interactivenormal.h>
 #include <ExamplesBase/InteractiveObjects/interactivefacenormal.h>
 #include <ExamplesBase/InteractiveObjects/interactivefacenormalserializer.h>
+#include <ExamplesBase/utility.h>
 
 #include "brepserializer.h"
-#include "normaldetector.h"
 
 static constexpr size_t sPerfPointsCount = 1000000ul;
 
@@ -132,7 +132,7 @@ class ViewportPrivate
             gp_Pnt P;
             gp_Vec V1, V2, V3;
             curve.D2(U, P, V1, V2);
-            const gp_Dir normal = NormalDetector::getNormal(TopoDS::Face(face), P);
+            const gp_Dir normal = ExamplesBase::getNormal(TopoDS::Face(face), P);
 
             const gp_Pnt normalEnd = P.Translated(normal.XYZ() * 5);
             auto lineN = new AIS_Line(new Geom_CartesianPoint(P), new Geom_CartesianPoint(normalEnd));
@@ -279,7 +279,7 @@ class ViewportPrivate
             return;
         }
 
-        auto normal = NormalDetector::getNormal(face, pnt);
+        auto normal = ExamplesBase::getNormal(face, pnt);
         auto normalObj = new ExamplesBase::InteractiveNormal;
         normalObj->setLabel("Р1"); //cyrilic test
         gp_Trsf trsf;
@@ -502,7 +502,7 @@ void Viewport::slNormalV1Test()
     std::vector <gp_Dir> normals;
     normals.reserve(points.size());
     t.restart();
-    normals = NormalDetector::getNormals(face, points);
+    normals = ExamplesBase::getNormals(face, points);
     qDebug() << "Find" << normals.size() << "normals on curve by" << t.elapsed() << "ms.";
 }
 

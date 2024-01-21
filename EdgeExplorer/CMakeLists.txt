@@ -10,8 +10,6 @@ set(PROJECT_SOURCES
     main.cpp
     mainwindow.cpp
     mainwindow.h
-    normaldetector.cpp
-    normaldetector.h
     viewport.cpp
     viewport.h
 )

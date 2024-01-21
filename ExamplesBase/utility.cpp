@@ -11,6 +11,9 @@
 #include <BRepBuilderAPI_MakeVertex.hxx>
 #include <BRepExtrema_DistShapeShape.hxx>
 #include <BRepPrimAPI_MakeCylinder.hxx>
+#include <BRepTools.hxx>
+#include <GeomLProp_SLProps.hxx>
+#include <ShapeAnalysis_Surface.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 
@@ -51,6 +54,45 @@ TopoDS_Edge findEdgeByPoint(const TopoDS_Shape &shape, const gp_Pnt &localPnt)
         res = edges.cbegin()->second;
     }
     return res;
+}
+
+gp_Dir getNormal(const TopoDS_Face &face, const gp_Pnt &point)
+{
+    auto aSurf = BRep_Tool::Surface(face);
+    Standard_Real u1, u2, v1, v2;
+    BRepTools::UVBounds(face, u1, u2, v1, v2);
+
+    Handle(ShapeAnalysis_Surface) surfAnalis = new ShapeAnalysis_Surface(aSurf);
+    const gp_Pnt2d pUV = surfAnalis->ValueOfUV(point, Precision::Confusion());
+
+    GeomLProp_SLProps props(aSurf, pUV.X(), pUV.Y(), 1, 0.01);
+    gp_Dir normal = props.Normal();
+    if (face.Orientation() == TopAbs_REVERSED || face.Orientation() == TopAbs_INTERNAL) {
+        normal.Reverse();
+    }
+    return normal;
+}
+
+std::vector<gp_Dir> getNormals(const TopoDS_Face &face, const std::vector<gp_Pnt> &points)
+{
+    std::vector <gp_Dir> normals;
+    normals.reserve(points.size());
+
+    auto aSurf = BRep_Tool::Surface(face);
+    Standard_Real u1, u2, v1, v2;
+    BRepTools::UVBounds(face, u1, u2, v1, v2);
+
+    Handle(ShapeAnalysis_Surface)  surfAnalis = new ShapeAnalysis_Surface(aSurf);
+    for (const auto &point : points) {
+        const gp_Pnt2d pUV = surfAnalis->ValueOfUV(point, Precision::Confusion());
+        GeomLProp_SLProps props(aSurf, pUV.X(), pUV.Y(), 1, 0.01);
+        gp_Dir normal = props.Normal();
+        if (face.Orientation() == TopAbs_REVERSED || face.Orientation() == TopAbs_INTERNAL) {
+            normal.Reverse();
+        }
+        normals.push_back(normal);
+    }
+    return normals;
 }
 
 }
