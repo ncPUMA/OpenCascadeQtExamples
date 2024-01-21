@@ -115,9 +115,10 @@ void ColoredShape::Compute(const Handle(PrsMgr_PresentationManager3d) &prsMgr,
             }
         }
     }
-    Standard_Real aTransparency = Transparency() ;
-    if (aTransparency > 0.0)
+
+    const auto transparency = Transparency();
+    if (transparency > 0.0)
     {
-        SetTransparency (aTransparency);
+        SetTransparency(transparency);
     }
 }

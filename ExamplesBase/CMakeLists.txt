@@ -131,6 +131,8 @@ add_library(ExamplesBase SHARED
   Objects/interactivesurfaceplane.cpp
   Objects/interactivesurfacerevolution.h
   Objects/interactivesurfacerevolution.cpp
+  Objects/interactivetexturedplane.h
+  Objects/interactivetexturedplane.cpp
 )
 
 target_link_libraries(ExamplesBase PRIVATE Qt5::Widgets)

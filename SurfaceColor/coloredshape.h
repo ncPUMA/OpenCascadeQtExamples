@@ -22,6 +22,7 @@ public:
     void setFaceColor(const TopoDS_Face &face, const Quantity_Color &color);
     void resetColors();
 
+protected:
     void Compute(const Handle(PrsMgr_PresentationManager3d) &prsMgr,
                  const Handle(Prs3d_Presentation) &prs,
                  const Standard_Integer mode) override;

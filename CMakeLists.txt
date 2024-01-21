@@ -34,6 +34,7 @@ add_subdirectory(Arrows)
 add_subdirectory(BooleanOps)
 add_subdirectory(ShapeToMesh)
 add_subdirectory(TexturedShapes)
+add_subdirectory(TexturedPlain)
 
 file(COPY Models/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Models")
 file(COPY Textures/ DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Textures")

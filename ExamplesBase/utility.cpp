@@ -56,7 +56,7 @@ TopoDS_Edge findEdgeByPoint(const TopoDS_Shape &shape, const gp_Pnt &localPnt)
     return res;
 }
 
-gp_Dir getNormal(const TopoDS_Face &face, const gp_Pnt &point)
+gp_Dir getNormal(const TopoDS_Face &face, const gp_Pnt &point, gp_Dir *D1U)
 {
     auto aSurf = BRep_Tool::Surface(face);
     Standard_Real u1, u2, v1, v2;
@@ -67,8 +67,14 @@ gp_Dir getNormal(const TopoDS_Face &face, const gp_Pnt &point)
 
     GeomLProp_SLProps props(aSurf, pUV.X(), pUV.Y(), 1, 0.01);
     gp_Dir normal = props.Normal();
+    if (D1U) {
+        *D1U = props.D1U();
+    }
     if (face.Orientation() == TopAbs_REVERSED || face.Orientation() == TopAbs_INTERNAL) {
         normal.Reverse();
+        if (D1U) {
+            D1U->Reverse();
+        }
     }
     return normal;
 }
